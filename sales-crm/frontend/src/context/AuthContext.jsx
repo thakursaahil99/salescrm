@@ -40,6 +40,12 @@ export function AuthProvider({ children }) {
   const logout = () => {
     authService.logout();
     setUser(null);
+    // Embedded under the Admin CRM shell (iframe)? Tell it too, so it clears
+    // its own session and returns to the Admin CRM login instead of leaving
+    // this app's now-logged-out login screen stuck inside the frame.
+    if (window.self !== window.top) {
+      window.top.postMessage({ type: "admin-crm-logout" }, "*");
+    }
   };
 
   // Pull the latest profile/role from the server (after an edit, or when a

@@ -46,6 +46,12 @@ export function AuthProvider({ children }) {
     localStorage.removeItem("mcrm_user");
     setUser(null);
     getSocket().disconnect();
+    // Embedded under the Admin CRM shell (iframe)? Tell it too, so it clears
+    // its own session and returns to the Admin CRM login instead of leaving
+    // this app's now-logged-out login screen stuck inside the frame.
+    if (window.self !== window.top) {
+      window.top.postMessage({ type: "admin-crm-logout" }, "*");
+    }
   }, []);
 
   return <AuthContext.Provider value={{ user, loading, login, logout }}>{children}</AuthContext.Provider>;

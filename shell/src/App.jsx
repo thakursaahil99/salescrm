@@ -122,6 +122,26 @@ export default function App() {
     }
   }, [creds, active]);
 
+  // A child CRM, embedded in the iframe, has its own logout button (in its own
+  // sidebar/nav). Clicking that only clears ITS localStorage and shows ITS own
+  // login screen inside the frame — the shell never finds out, so it keeps
+  // thinking the session is live. Each child app posts this message on logout
+  // (see its AuthContext) so the shell can clear its own session too and drop
+  // back to the Admin CRM login instead of leaving a dead CRM login in the frame.
+  useEffect(() => {
+    const knownOrigins = new Set(CRM_DEFS.filter((c) => c.appUrl).map((c) => new URL(c.appUrl).origin));
+    const onMessage = (event) => {
+      if (!knownOrigins.has(event.origin)) return;
+      if (event.data?.type === "admin-crm-logout") {
+        localStorage.removeItem(CREDS_KEY);
+        setCreds(null);
+        setActive(null);
+      }
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, []);
+
   const current = CRM_DEFS.find((c) => c.id === active) || null;
   const frameSrc = useMemo(() => {
     if (!creds || !current || !current.ready) return "";
