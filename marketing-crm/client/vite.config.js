@@ -11,4 +11,17 @@ export default defineConfig({
       "/socket.io": { target: "http://localhost:6050", ws: true },
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        // Splits the one ~800KB bundle into cacheable pieces: vendor code (which
+        // rarely changes) stays cached across deploys instead of being
+        // re-downloaded every time app code changes.
+        manualChunks: {
+          "vendor-react": ["react", "react-dom", "react-router-dom"],
+          "vendor-charts": ["recharts"],
+        },
+      },
+    },
+  },
 });

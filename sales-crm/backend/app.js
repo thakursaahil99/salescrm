@@ -5,6 +5,7 @@ import express from "express";
 import cors from "cors";
 import morgan from "morgan";
 import helmet from "helmet";
+import compression from "compression";
 import rateLimit from "express-rate-limit";
 import { mongoSanitize } from "./middleware/sanitize.js";
 import { notFound, errorHandler } from "./middleware/errorMiddleware.js";
@@ -40,6 +41,7 @@ app.set("trust proxy", 1);
 // silently blocks that at the browser level even when CORS allows it.
 app.use(helmet({ contentSecurityPolicy: false, crossOriginResourcePolicy: { policy: "cross-origin" } }));
 app.use(cors({ origin: (process.env.CLIENT_URL || "http://localhost:5173").split(",") }));
+app.use(compression());
 // 5mb (vs the 100kb default) so one chunk of a bulk lead import fits.
 app.use(express.json({ limit: "5mb" }));
 app.use(mongoSanitize); // drop `$`/`.` keys from body, query & params

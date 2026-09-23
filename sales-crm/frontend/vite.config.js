@@ -22,4 +22,18 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        // Splits the bundle so vendor code (rarely changes) stays cached across
+        // deploys, and heavy libs used on only a few pages (PDF/Excel export,
+        // charts) don't inflate the bundle everyone downloads on first load.
+        manualChunks: {
+          "vendor-react": ["react", "react-dom", "react-router-dom"],
+          "vendor-charts": ["recharts"],
+          "vendor-export": ["jspdf", "jspdf-autotable"],
+        },
+      },
+    },
+  },
 });
