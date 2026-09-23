@@ -1,0 +1,12 @@
+﻿import { connectDB } from "./src/db.js";
+import User from "./src/models/User.js";
+import bcrypt from "bcryptjs";
+import mongoose from "mongoose";
+const NEW_PASSWORD = "Admin@123";
+const { connected } = await connectDB();
+if (!connected) process.exit(1);
+const passwordHash = await bcrypt.hash(NEW_PASSWORD, 10);
+const res = await User.findOneAndUpdate({ username: "Admin" }, { passwordHash }, { new: true });
+console.log(res ? `Password reset for ${res.username}` : "No user named 'Admin' found.");
+await mongoose.disconnect();
+process.exit(0);
