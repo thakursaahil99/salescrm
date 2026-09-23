@@ -28,7 +28,10 @@ router.get(
       filter.$or = [{ siteName: re }, { contactPerson: re }, { location: re }, { contactNo: re }];
     }
 
-    const leads = await Lead.find(filter).sort({ timestamp: -1 }).lean();
+    // The UI has no pagination yet (it loads the whole scoped list at once), so this
+    // stays uncapped for realistic data volumes; 20000 is only a backstop against a
+    // runaway import or a bug, not a real pagination limit.
+    const leads = await Lead.find(filter).sort({ timestamp: -1 }).limit(20000).lean();
     res.json({ ok: true, data: leads });
   })
 );

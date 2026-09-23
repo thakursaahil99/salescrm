@@ -46,8 +46,7 @@ app.use(mongoSanitize); // drop `$`/`.` keys from body, query & params
 if (process.env.NODE_ENV !== "production") app.use(morgan("dev"));
 
 // Blanket limiter — a generous DoS backstop, not something a real client hits
-// (a whole office behind one NAT IP still fits). Also the only throttle on
-// /auth/login.
+// (a whole office behind one NAT IP still fits).
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 4000,
@@ -55,9 +54,21 @@ const apiLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Dedicated login throttle: the blanket limiter above is far too loose to slow
+// down credential stuffing against one account. Still generous enough for a
+// shared-NAT office mistyping passwords.
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many login attempts. Please wait a few minutes and try again." },
+});
+
 app.get("/api/health", (req, res) => res.json({ status: "ok", service: "RBH Sales CRM API" }));
 
 app.use("/api", apiLimiter);
+app.use("/api/auth/login", loginLimiter);
 
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);

@@ -288,7 +288,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const fms = fmsOr404(await Fms.findById(req.params.id).lean());
     const filter = buildFmsEntryFilter(req.user, { fmsId: fms._id });
-    const entries = await FmsEntry.find(filter).sort({ entryDate: -1 }).lean();
+    const entries = await FmsEntry.find(filter).sort({ entryDate: -1 }).limit(20000).lean();
     const hol = await holidays();
     res.json({ ok: true, serverNow: Date.now(), fmsId: String(fms._id), data: entries.map((e) => serializeEntry(e, fms, hol)) });
   })

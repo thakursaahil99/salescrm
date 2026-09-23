@@ -35,6 +35,18 @@ export function createApp() {
   const apiLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 500, standardHeaders: true, legacyHeaders: false });
   app.use("/api", apiLimiter);
 
+  // Stricter throttle on login specifically — the blanket limiter above (500/15min,
+  // shared across every route) is far too loose to slow down credential stuffing
+  // against one account, especially with the short passwords some accounts use.
+  const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 20,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { ok: false, msg: "Too many login attempts. Please wait a few minutes and try again." },
+  });
+  app.use("/api/auth/login", loginLimiter);
+
   app.get("/api/health", (req, res) => res.json({ ok: true, service: "marketing-crm-server" }));
 
   app.use("/api/auth", authRoutes);
