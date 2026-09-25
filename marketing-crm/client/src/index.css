@@ -6,30 +6,38 @@ body {
   @apply bg-gray-50 text-gray-900 font-sans;
 }
 
-.badge {
-  @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold;
-}
+/* These custom classes must live in the "components" layer, not as plain
+   rules after the @tailwind directives — otherwise they land AFTER the
+   generated utilities in the compiled CSS and, at equal specificity, beat
+   them in the cascade. That silently broke every `.input w-16`/`w-36`
+   combo (e.g. FMS builder's field-type dropdown, step hr/min/sec boxes):
+   .input's width:100% was overriding the explicit narrower width utility. */
+@layer components {
+  .badge {
+    @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold;
+  }
 
-.btn {
-  @apply inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
-}
-.btn-primary {
-  @apply btn bg-brand text-white hover:bg-brand-dark;
-}
-.btn-secondary {
-  @apply btn bg-gray-100 text-gray-700 hover:bg-gray-200;
-}
-.btn-danger {
-  @apply btn bg-red-600 text-white hover:bg-red-700;
-}
-.btn-icon {
-  @apply inline-flex items-center justify-center w-8 h-8 rounded-md hover:bg-gray-100 text-gray-500 transition-colors;
-}
+  .btn {
+    @apply inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-primary {
+    @apply btn bg-brand text-white hover:bg-brand-dark;
+  }
+  .btn-secondary {
+    @apply btn bg-gray-100 text-gray-700 hover:bg-gray-200;
+  }
+  .btn-danger {
+    @apply btn bg-red-600 text-white hover:bg-red-700;
+  }
+  .btn-icon {
+    @apply inline-flex items-center justify-center w-8 h-8 rounded-md hover:bg-gray-100 text-gray-500 transition-colors;
+  }
 
-.input {
-  @apply w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand focus:ring-brand;
-}
+  .input {
+    @apply w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand focus:ring-brand;
+  }
 
-.card {
-  @apply bg-white rounded-xl border border-gray-200 shadow-sm;
+  .card {
+    @apply bg-white rounded-xl border border-gray-200 shadow-sm;
+  }
 }
