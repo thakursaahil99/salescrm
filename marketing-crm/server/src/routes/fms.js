@@ -7,6 +7,7 @@ import User from "../models/User.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { requireAuth, requireElevated } from "../middleware/auth.js";
 import { buildFmsEntryFilter, canAccessFmsEntry } from "../utils/fmsScope.js";
+import { isDupKeyError, addFmsEntry } from "../utils/fmsEntry.js";
 import { computeChain, stepStatus, holidaySetFrom, parseHolidayDate, dateKeyFromMs, dayIndex, IST_MS, DAY_MS } from "../utils/fmsSchedule.js";
 
 const router = Router();
@@ -294,25 +295,6 @@ router.get(
   })
 );
 
-// picks the value for the unique key: auto = next running number (retried a few times if two adds race);
-// manual = the typed value, checked for length (uniqueness is enforced by the DB's own unique index).
-async function resolveUid(fms, typedValue) {
-  if (!fms.uidAuto) {
-    const v = tidy(typedValue);
-    if (!v) throw badReq(`Enter ${fms.uidLabel}.`);
-    if (v.length > 60) throw badReq(`${fms.uidLabel} is too long (max 60 characters).`);
-    return { value: v, norm: v.toLowerCase() };
-  }
-  const top = await FmsEntry.find({ fmsId: fms._id }).select("uidValue").lean();
-  let max = 0;
-  for (const e of top) { const n = Number(e.uidValue); if (!isNaN(n) && n > max) max = n; }
-  const value = String(max + 1);
-  return { value, norm: value };
-}
-function isDupKeyError(err) {
-  return err && (err.code === 11000 || err.codeName === "DuplicateKey");
-}
-
 router.post(
   "/:id/entries",
   requireElevated,
@@ -324,24 +306,15 @@ router.post(
     const fieldsSrc = b.fields && typeof b.fields === "object" ? b.fields : {};
     checkFieldValues(fms, fieldsSrc, b.assignedTo);
 
-    for (let attempt = 0; attempt < 5; attempt++) {
-      const uid = await resolveUid(fms, fieldsSrc.uid);
-      const fieldsObj = {};
-      for (const f of fms.fields) fieldsObj[f.key] = String(fieldsSrc[f.key] ?? "");
-      const steps = fms.steps.map((s) => ({ key: s.key, label: s.label, hours: s.hours, actual: null, remark: "", doneBy: "" }));
-      try {
-        const entry = await FmsEntry.create({
-          fmsId: fms._id, entryDate, assignedTo: tidy(b.assignedTo), fields: fieldsObj,
-          uidValue: uid.value, uidNorm: uid.norm, steps, createdBy: req.user.username,
-        });
-        const hol = await holidays();
-        return res.status(201).json({ ok: true, data: serializeEntry(entry.toObject(), fms, hol) });
-      } catch (err) {
-        if (isDupKeyError(err) && fms.uidAuto && attempt < 4) continue; // two adds raced for the same number: retry with a fresh one
-        if (isDupKeyError(err)) throw badReq(`"${fieldsSrc.uid}" is already used for ${fms.uidLabel}. Each entry needs its own ${fms.uidLabel}.`);
-        throw err;
-      }
+    let entry;
+    try {
+      entry = await addFmsEntry(fms, { entryDate, assignedTo: b.assignedTo, fieldsSrc, createdBy: req.user.username });
+    } catch (err) {
+      if (isDupKeyError(err)) throw badReq(`"${fieldsSrc.uid}" is already used for ${fms.uidLabel}. Each entry needs its own ${fms.uidLabel}.`);
+      throw err;
     }
+    const hol = await holidays();
+    res.status(201).json({ ok: true, data: serializeEntry(entry.toObject(), fms, hol) });
   })
 );
 

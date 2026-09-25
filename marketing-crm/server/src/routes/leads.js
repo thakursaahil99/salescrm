@@ -5,14 +5,50 @@ import Lead from "../models/Lead.js";
 import Remark from "../models/Remark.js";
 import Reminder from "../models/Reminder.js";
 import User from "../models/User.js";
+import Fms from "../models/Fms.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { requireAuth, requireElevated } from "../middleware/auth.js";
 import { buildLeadFilter, canAccessLead } from "../utils/leadScope.js";
 import { STAGES } from "../constants/index.js";
 import { emitLeadEvent } from "../socket.js";
+import { addFmsEntry } from "../utils/fmsEntry.js";
 
 const router = Router();
 router.use(requireAuth);
+
+// Finds an FMS field's key by matching its label (case/punctuation-insensitive) against any of the
+// given candidate labels — the exact wording an admin typed while building the FMS may vary slightly.
+function findFmsFieldKey(fms, ...labels) {
+  const norm = (s) => String(s).toLowerCase().replace(/[^a-z0-9]/g, "");
+  const targets = labels.map(norm);
+  const f = fms.fields.find((fld) => targets.includes(norm(fld.label)));
+  return f ? f.key : null;
+}
+
+// Mirrors a newly-added lead into the "Sales FMS" as one entry, so a salesperson's FMS pipeline
+// always has every lead they add without typing it twice. Best-effort and non-blocking: the FMS may
+// not exist yet, or its field labels may not match — none of that should ever stop the lead itself
+// from saving, so every failure here is swallowed after a server-side warning.
+async function mirrorLeadToFms(lead, username) {
+  try {
+    const fms = await Fms.findOne({ name: /^sales fms$/i, deleted: false });
+    if (!fms) return;
+    const nameKey = findFmsFieldKey(fms, "Name", "Contact Person");
+    const companyKey = findFmsFieldKey(fms, "Company Name", "Site Name");
+    const phoneKey = findFmsFieldKey(fms, "Ph No.", "Ph No", "Phone", "Contact No");
+    const emailKey = findFmsFieldKey(fms, "E-Mail", "Email");
+    const reqKey = findFmsFieldKey(fms, "Requirement");
+    const fieldsSrc = {};
+    if (nameKey) fieldsSrc[nameKey] = lead.contactPerson || "";
+    if (companyKey) fieldsSrc[companyKey] = lead.siteName || "";
+    if (phoneKey) fieldsSrc[phoneKey] = lead.contactNo || "";
+    if (emailKey) fieldsSrc[emailKey] = lead.email || "";
+    if (reqKey) fieldsSrc[reqKey] = lead.clientType ? `${lead.clientType} Kitchen` : "";
+    await addFmsEntry(fms, { entryDate: lead.timestamp || new Date(), assignedTo: lead.leadHead, fieldsSrc, createdBy: username });
+  } catch (err) {
+    console.warn("[leads] Failed to mirror a lead into Sales FMS:", err.message);
+  }
+}
 
 // ── LIST LEADS (privacy + slicer + month + search + stage filters) ──
 router.get(
@@ -102,6 +138,7 @@ router.post(
     });
 
     emitLeadEvent("lead:created", lead);
+    await mirrorLeadToFms(lead, req.user.username);
     res.status(201).json({ ok: true, data: lead });
   })
 );
