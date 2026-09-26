@@ -71,7 +71,7 @@ export default function FmsDashboard({ fmsList, onDrill, onOpenEntry }) {
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Dashboard</h1>
+          <h1 className="text-xl font-bold text-gray-900 tracking-tight">Dashboard</h1>
           <p className="text-xs text-gray-400">Updated {new Date(data.serverNow).toLocaleTimeString()} · {multi ? "All FMS" : data.breakdown[0]?.name}</p>
         </div>
         <div className="flex flex-wrap gap-2">

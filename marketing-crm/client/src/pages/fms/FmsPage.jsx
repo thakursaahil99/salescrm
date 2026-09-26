@@ -143,7 +143,7 @@ export default function FmsPage() {
           {cur && (
             <>
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <h1 className="text-xl font-bold text-gray-900">{isAdmin ? cur.name : "My Tasks"}</h1>
+                <h1 className="text-xl font-bold text-gray-900 tracking-tight">{isAdmin ? cur.name : "My Tasks"}</h1>
                 <div className="flex flex-wrap gap-2">
                   {isAdmin && (
                     <>

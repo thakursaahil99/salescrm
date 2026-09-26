@@ -42,7 +42,7 @@ export default function UsersPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-gray-900">Users</h1>
+        <h1 className="text-xl font-bold text-gray-900 tracking-tight">Users</h1>
         <button className="btn-primary" onClick={() => setAddOpen(true)}>
           <Plus size={16} /> Add User
         </button>

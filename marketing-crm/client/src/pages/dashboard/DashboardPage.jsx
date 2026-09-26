@@ -49,7 +49,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-bold text-gray-900">Dashboard</h1>
+        <h1 className="text-xl font-bold text-gray-900 tracking-tight">Dashboard</h1>
         {isAdmin && (
           <div className="flex items-center gap-2">
             <select className="input w-auto" value={slicer} onChange={(e) => setSlicer(e.target.value)}>
@@ -194,7 +194,7 @@ function KpiCard({ label, value, accent = "text-gray-900", onClick }) {
   return (
     <Comp
       onClick={onClick}
-      className={`card p-4 text-left ${onClick ? "cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all" : ""}`}
+      className={`card p-4 text-left ${onClick ? "cursor-pointer hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-150" : ""}`}
     >
       <p className="text-[11px] font-semibold text-gray-400 uppercase">{label}</p>
       <p className={`text-2xl font-extrabold mt-1 ${accent}`}>{value}</p>

@@ -1,5 +1,10 @@
 * { box-sizing: border-box; }
-body { margin: 0; font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; background: #f9fafb; }
+body {
+  margin: 0;
+  font-family: "DM Sans", -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  background: #f9fafb;
+  -webkit-font-smoothing: antialiased;
+}
 
 .login-screen {
   min-height: 100vh;
@@ -13,12 +18,13 @@ body { margin: 0; font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-se
   width: 100%;
   max-width: 360px;
   background: #fff;
-  border-radius: 16px;
+  border-radius: 18px;
   padding: 32px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 20px 40px -8px rgba(0, 0, 0, 0.3), 0 8px 16px -4px rgba(0, 0, 0, 0.12);
   display: flex;
   flex-direction: column;
   align-items: stretch;
+  animation: card-in 180ms ease-out;
 }
 .login-logo {
   width: 56px;
@@ -32,9 +38,10 @@ body { margin: 0; font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-se
   font-weight: 700;
   font-size: 20px;
   margin: 0 auto 12px;
+  box-shadow: 0 4px 10px rgba(192, 57, 43, 0.35);
 }
-.login-logo.small { width: 36px; height: 36px; font-size: 14px; margin: 0; }
-.login-card h1 { text-align: center; margin: 0 0 2px; font-size: 18px; color: #111827; }
+.login-logo.small { width: 36px; height: 36px; font-size: 14px; margin: 0; box-shadow: none; }
+.login-card h1 { text-align: center; margin: 0 0 2px; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; color: #111827; }
 .login-sub { text-align: center; color: #9ca3af; font-size: 12px; margin: 0 0 20px; }
 .login-card label { font-size: 12px; font-weight: 600; color: #4b5563; margin: 10px 0 4px; }
 .login-card input {
@@ -42,8 +49,10 @@ body { margin: 0; font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-se
   border-radius: 8px;
   padding: 10px 12px;
   font-size: 14px;
+  transition: border-color 150ms, box-shadow 150ms;
+  font-family: inherit;
 }
-.login-card input:focus { outline: none; border-color: #c0392b; }
+.login-card input:focus { outline: none; border-color: #c0392b; box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.15); }
 .password-field { position: relative; display: flex; }
 .password-field input { flex: 1; padding-right: 38px; }
 .login-card button.eye-toggle {
@@ -58,7 +67,10 @@ body { margin: 0; font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-se
   font-size: 15px;
   padding: 4px 6px;
   line-height: 1;
+  opacity: 0.6;
+  transition: opacity 150ms;
 }
+.login-card button.eye-toggle:hover { opacity: 1; }
 .login-error {
   color: #dc2626;
   background: #fef2f2;
@@ -84,8 +96,16 @@ body { margin: 0; font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-se
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
+  transition: background-color 150ms, transform 100ms, box-shadow 150ms;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
-.login-card button:hover { background: #a5301f; }
+.login-card button:hover { background: #a5301f; box-shadow: 0 4px 10px rgba(192, 57, 43, 0.25); }
+.login-card button:active { transform: scale(0.98); }
+
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(6px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
 
 .shell { display: flex; height: 100vh; width: 100vw; }
 .sidebar {
@@ -96,15 +116,17 @@ body { margin: 0; font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-se
   display: flex;
   flex-direction: column;
   padding: 16px 12px;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.08);
 }
 .sidebar-brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 20px; }
-.brand-title { margin: 0; font-weight: 700; font-size: 14px; color: #fff; }
+.brand-title { margin: 0; font-weight: 700; font-size: 14px; color: #fff; letter-spacing: -0.01em; }
 .brand-sub { margin: 0; font-size: 11px; color: #9ca3af; }
 .sidebar nav { display: flex; flex-direction: column; gap: 4px; flex: 1; }
 .nav-item {
   text-align: left;
   background: none;
   border: none;
+  border-left: 3px solid transparent;
   color: #d1d5db;
   padding: 10px 12px;
   border-radius: 8px;
@@ -113,9 +135,11 @@ body { margin: 0; font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-se
   display: flex;
   align-items: center;
   justify-content: space-between;
+  transition: background-color 150ms, color 150ms, border-color 150ms;
+  font-family: inherit;
 }
-.nav-item:hover:not(.disabled) { background: #374151; }
-.nav-item.active { background: #c0392b; color: #fff; font-weight: 600; }
+.nav-item:hover:not(.disabled):not(.active) { background: #2d3748; color: #fff; }
+.nav-item.active { background: rgba(192, 57, 43, 0.18); color: #fff; font-weight: 600; border-left-color: #e5675a; }
 .nav-item.disabled { color: #6b7280; cursor: not-allowed; }
 .soon { font-size: 10px; background: #374151; padding: 2px 6px; border-radius: 10px; }
 .logout {
@@ -126,6 +150,9 @@ body { margin: 0; font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-se
   border-radius: 8px;
   cursor: pointer;
   font-size: 13px;
+  margin-top: 12px;
+  transition: background-color 150ms, border-color 150ms;
+  font-family: inherit;
 }
 .logout:hover { background: #374151; }
 
@@ -143,6 +170,8 @@ body { margin: 0; font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-se
   border: 1px solid #374151;
   color: #e5e7eb;
   opacity: 0.55;
+  transition: opacity 150ms, background-color 150ms, border-color 150ms;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 .logout.floating:hover { opacity: 1; background: #c0392b; border-color: #c0392b; }
 .placeholder {

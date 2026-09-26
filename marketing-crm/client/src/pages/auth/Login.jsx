@@ -27,12 +27,12 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-brand-dark px-4">
-      <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-8">
+      <div className="w-full max-w-sm bg-white rounded-2xl shadow-modal p-8 animate-modal-in">
         <div className="flex flex-col items-center mb-6">
-          <div className="w-14 h-14 rounded-xl bg-brand text-white flex items-center justify-center font-bold text-xl mb-3">
+          <div className="w-14 h-14 rounded-xl bg-brand text-white flex items-center justify-center font-bold text-xl mb-3 shadow-card">
             RB
           </div>
-          <h1 className="text-lg font-bold text-gray-900">Marketing CRM</h1>
+          <h1 className="text-lg font-bold text-gray-900 tracking-tight">Marketing CRM</h1>
           <p className="text-xs text-gray-400 mt-1">RedBean Hospitality</p>
         </div>
 
