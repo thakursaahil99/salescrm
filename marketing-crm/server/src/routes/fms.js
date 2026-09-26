@@ -527,7 +527,7 @@ router.get(
         if (!st.plannedTs) return;
         anySet = true;
         const agg = pd.stepAgg[i];
-        const item = { id: e.id, fms: e.fmsName, name: e.title, companyName: e.sub, step: st.label, assignedTo: e.assignedTo, plannedTs: st.plannedTs, actualTs: st.actualTs, remark: st.remark, doneBy: st.doneBy };
+        const item = { id: e.id, fmsId: e.fmsId, fms: e.fmsName, name: e.title, companyName: e.sub, step: st.label, assignedTo: e.assignedTo, plannedTs: st.plannedTs, actualTs: st.actualTs, remark: st.remark, doneBy: st.doneBy };
         if (st.status === "done_on_time") {
           agg.onTime++; t.onTime++; kpi.onTimeSteps++; pd.kpi.onTimeSteps++;
           const wko = weekStart(st.actualTs); if (weekly[wko]) weekly[wko].onTime++;

@@ -29,6 +29,12 @@ export default function FmsPage() {
   const [timingsOpen, setTimingsOpen] = useState(false);
   const [holidaysOpen, setHolidaysOpen] = useState(false);
 
+  // Dashboard drill-down: clicking a chart there jumps here to the FMS's entry list, filtered to
+  // just the leads that chart element represents. `pendingViewId` is for the other kind of click —
+  // a dashboard list row that already names ONE specific lead — which opens it directly once loaded.
+  const [drill, setDrill] = useState(null); // { label, predicate } | null
+  const [pendingViewId, setPendingViewId] = useState(null);
+
   const cur = useMemo(() => fmsList.find((f) => f.id === curId) || null, [fmsList, curId]);
   const visible = useMemo(() => (isAdmin ? fmsList : fmsList.filter((f) => f.count > 0)), [fmsList, isAdmin]);
 
@@ -82,6 +88,29 @@ export default function FmsPage() {
     return { total: entries.length, onTime, late, overdue };
   }, [entries]);
 
+  const filteredEntries = useMemo(() => (drill ? entries.filter(drill.predicate) : entries), [entries, drill]);
+
+  // A dashboard chart click: jump to that FMS's list, filtered to the leads it represents.
+  const goDrill = (fmsId, label, predicate) => {
+    setPendingViewId(null);
+    setCurId(fmsId);
+    setDrill({ label, predicate });
+    setTab("fms");
+  };
+  // A dashboard list-row click: it already names ONE lead — open it directly once its FMS's
+  // entries have loaded (see the effect below).
+  const goToEntry = (fmsId, entryId) => {
+    setDrill(null);
+    setCurId(fmsId);
+    setPendingViewId(entryId);
+    setTab("fms");
+  };
+  useEffect(() => {
+    if (!pendingViewId) return;
+    const found = entries.find((e) => e.id === pendingViewId);
+    if (found) { setViewEntry(found); setPendingViewId(null); }
+  }, [entries, pendingViewId]);
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-1 border-b border-gray-200">
@@ -90,14 +119,14 @@ export default function FmsPage() {
       </div>
 
       {tab === "dashboard" ? (
-        <FmsDashboard fmsList={fmsList} />
+        <FmsDashboard fmsList={fmsList} onDrill={goDrill} onOpenEntry={goToEntry} />
       ) : (
         <>
           <div className="flex flex-wrap gap-2">
             {visible.map((f) => (
               <button
                 key={f.id}
-                onClick={() => setCurId(f.id)}
+                onClick={() => { setCurId(f.id); setDrill(null); }}
                 className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-sm font-semibold transition-colors ${f.id === curId ? "bg-brand text-white" : "bg-white border border-gray-200 text-gray-600 hover:border-brand hover:text-brand"}`}
               >
                 {f.name}
@@ -134,6 +163,13 @@ export default function FmsPage() {
                 <KpiCard label="Steps Late" value={kpis.late} accent="text-orange-600" />
               </div>
 
+              {drill && (
+                <div className="flex items-center gap-2 text-xs bg-brand-50 border border-brand-light/50 text-brand-dark px-3 py-2 rounded-lg">
+                  <span>Filtered from Dashboard: <b>{drill.label}</b> ({filteredEntries.length} of {entries.length})</span>
+                  <button className="ml-auto font-semibold hover:underline" onClick={() => setDrill(null)}>Clear ✕</button>
+                </div>
+              )}
+
               <div className="card overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
@@ -147,10 +183,10 @@ export default function FmsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {entries.length === 0 ? (
-                      <tr><td colSpan={6} className="p-8 text-center text-gray-400">{isAdmin ? "No FMS entries yet." : "No leads are assigned to you yet."}</td></tr>
+                    {filteredEntries.length === 0 ? (
+                      <tr><td colSpan={6} className="p-8 text-center text-gray-400">{drill ? "No leads match this filter." : isAdmin ? "No FMS entries yet." : "No leads are assigned to you yet."}</td></tr>
                     ) : (
-                      entries.map((e) => {
+                      filteredEntries.map((e) => {
                         const ns = nextStep(e.steps);
                         const overall = overallStatus(e.steps);
                         const anyDone = e.steps.some((s) => s.status === "done_on_time" || s.status === "done_late");
