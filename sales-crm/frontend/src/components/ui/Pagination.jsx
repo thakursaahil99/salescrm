@@ -13,14 +13,14 @@ export default function Pagination({ page, pages, total, onChange }) {
         <button
           onClick={() => onChange(page - 1)}
           disabled={page <= 1}
-          className="p-1.5 rounded-lg border border-gray-200 disabled:opacity-40 hover:bg-gray-50"
+          className="p-1.5 rounded-lg border border-gray-200 transition-colors duration-150 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
         >
           <MdChevronLeft size={16} />
         </button>
         <button
           onClick={() => onChange(page + 1)}
           disabled={page >= pages}
-          className="p-1.5 rounded-lg border border-gray-200 disabled:opacity-40 hover:bg-gray-50"
+          className="p-1.5 rounded-lg border border-gray-200 transition-colors duration-150 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
         >
           <MdChevronRight size={16} />
         </button>

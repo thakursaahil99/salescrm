@@ -22,9 +22,9 @@ export default function Modal({ open, onClose, title, children, footer, size = "
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 sm:p-6">
-      <div className="fixed inset-0 bg-black/40" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm animate-fade-in" onClick={onClose} />
       <div
-        className={`relative bg-white rounded-2xl shadow-xl w-full ${WIDTHS[size]} my-8 flex flex-col max-h-[calc(100vh-4rem)]`}
+        className={`relative bg-white rounded-xl shadow-modal w-full ${WIDTHS[size]} my-8 flex flex-col max-h-[calc(100vh-4rem)] animate-modal-in`}
         role="dialog"
         aria-modal="true"
       >

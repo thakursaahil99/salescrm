@@ -93,9 +93,9 @@ export default function Listbox({
             : // `buttonClassName`, when given, REPLACES (not merges with) the default
               // look below — Tailwind utilities don't reliably override each other by
               // string order, so mixing "rounded-lg ... rounded-md" would be a coin flip.
-              `w-full flex items-center justify-between gap-2 text-left transition-[border-color,box-shadow] disabled:cursor-not-allowed ${
+              `w-full flex items-center justify-between gap-2 text-left transition-[border-color,box-shadow] duration-150 disabled:cursor-not-allowed ${
                 buttonClassName ||
-                "rounded-lg border border-gray-300 bg-white shadow-sm px-3 py-2 text-sm hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary disabled:opacity-60"
+                "rounded-lg border border-gray-300 bg-white shadow-sm px-3 py-2 text-sm hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary disabled:opacity-50"
               }`
         }
       >

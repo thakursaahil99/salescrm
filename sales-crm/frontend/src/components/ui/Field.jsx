@@ -4,7 +4,7 @@
 import { forwardRef } from "react";
 
 const base =
-  "w-full rounded-lg border px-3 py-2 text-sm shadow-sm transition-[border-color,box-shadow] focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary disabled:bg-gray-50 disabled:text-gray-400 disabled:shadow-none";
+  "w-full rounded-lg border px-3 py-2 text-sm shadow-sm placeholder:text-gray-400 transition-[border-color,box-shadow] duration-150 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary disabled:bg-gray-50 disabled:text-gray-400 disabled:shadow-none disabled:cursor-not-allowed";
 const border = (error) => (error ? "border-red-400" : "border-gray-300 hover:border-gray-400");
 
 export function FieldShell({ label, error, hint, required, children }) {

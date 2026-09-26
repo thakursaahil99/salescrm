@@ -1,7 +1,12 @@
-export default function Card({ className = "", children, padding = "p-5" }) {
+export default function Card({ className = "", children, padding = "p-5", onClick, ...rest }) {
+  const clickable = !!onClick;
   return (
     <div
-      className={`bg-white rounded-xl border border-gray-200/80 shadow-[0_1px_2px_rgba(16,24,40,0.04),0_2px_8px_-2px_rgba(16,24,40,0.06)] ${padding} ${className}`}
+      onClick={onClick}
+      className={`bg-white rounded-xl border border-gray-200/80 shadow-card transition-all duration-150 ${
+        clickable ? "cursor-pointer hover:shadow-card-hover hover:-translate-y-0.5" : ""
+      } ${padding} ${className}`}
+      {...rest}
     >
       {children}
     </div>

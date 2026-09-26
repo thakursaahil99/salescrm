@@ -30,7 +30,7 @@ export default function DataTable({
             ))}
           </tr>
         </thead>
-        <tbody>
+        <tbody className="divide-y divide-gray-100">
           {rows.map((row) => (
             <tr
               key={row[keyField]}
@@ -40,7 +40,7 @@ export default function DataTable({
               {columns.map((c) => (
                 <td
                   key={c.key}
-                  className={`py-3.5 px-3.5 text-gray-700 align-middle border-b border-gray-100 ${
+                  className={`py-3.5 px-3.5 text-gray-700 align-middle ${
                     c.align === "right" ? "text-right" : ""
                   } ${c.className || ""}`}
                 >

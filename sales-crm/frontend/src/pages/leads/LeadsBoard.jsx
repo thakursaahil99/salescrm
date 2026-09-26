@@ -464,7 +464,7 @@ export default function LeadsBoard() {
               placeholder="Search name, phone, brand, city…"
               value={filters.q}
               onChange={(e) => setFilter({ q: e.target.value })}
-              className="w-full rounded-lg border border-gray-300 shadow-sm pl-9 pr-3 py-2 text-sm transition-[border-color,box-shadow] hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary"
+              className="w-full rounded-lg border border-gray-300 shadow-sm pl-9 pr-3 py-2 text-sm transition-[border-color,box-shadow] duration-150 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
             />
           </div>
           {canPickOwner && (

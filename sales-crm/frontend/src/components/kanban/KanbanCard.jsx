@@ -38,7 +38,7 @@ export default function KanbanCard({ lead, onClick, onUndo, onDragStart, onDragE
       }}
       onDragEnd={onDragEnd}
       onClick={() => onClick?.(lead)}
-      className={`bg-white rounded-lg border border-gray-200 p-3 text-sm shadow-sm cursor-pointer hover:border-primary/40 hover:shadow transition ${
+      className={`bg-white rounded-lg border border-gray-200 p-3 text-sm shadow-xs cursor-pointer transition-all duration-150 hover:border-primary/40 hover:shadow-card-hover hover:-translate-y-0.5 ${
         dragging ? "opacity-40" : ""
       }`}
     >
