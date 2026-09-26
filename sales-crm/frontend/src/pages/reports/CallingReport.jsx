@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { MdFileDownload, MdPictureAsPdf, MdRefresh } from "react-icons/md";
+import { MdFileDownload, MdPictureAsPdf, MdRefresh, MdClose, MdDateRange } from "react-icons/md";
 import PageHeader from "../../components/PageHeader.jsx";
 import Card from "../../components/ui/Card.jsx";
 import Button from "../../components/ui/Button.jsx";
@@ -47,22 +47,44 @@ export default function CallingReport() {
   const [period, setPeriod] = useState({ month: now.getMonth() + 1, year: now.getFullYear() });
   const [week, setWeek] = useState(0); // All Weeks by default
 
+  // A custom [from, to] someone picked instead of a month — takes over the whole report
+  // (no week breakdown; see buildCallingReport). `draft*` is what's in the two date inputs
+  // before "Apply"; `range` is the one actually driving the fetch.
+  const [range, setRange] = useState(null);
+  const [draftFrom, setDraftFrom] = useState("");
+  const [draftTo, setDraftTo] = useState("");
+
   // Jumping to a different month: back to "All Weeks" instead of leaving a
   // stale week selected from whatever month was open before.
   useEffect(() => {
     setWeek(0);
   }, [period.month, period.year]);
 
+  const applyRange = () => {
+    if (!draftFrom || !draftTo) return;
+    if (draftFrom > draftTo) return toast.error("The start date must be before the end date.");
+    setRange({ from: draftFrom, to: draftTo });
+  };
+  const clearRange = () => {
+    setRange(null);
+    setDraftFrom("");
+    setDraftTo("");
+  };
+
   // Live: same refresh model as the Sales Report — auto-updates every 20s and
   // on tab focus, no reload.
-  const fetchReport = useCallback(() => getCallingReport(period), [period]);
+  const fetchReport = useCallback(() => getCallingReport(range || period), [range, period]);
   const { data, loading, error, refreshedAt, reload } = useLiveData(fetchReport, [
+    range?.from,
+    range?.to,
     period.month,
     period.year,
   ]);
 
-  const periodLabel = `${MONTHS[period.month - 1]} ${period.year}`;
-  const fileBase = `RBH-calling-report-${period.year}-${String(period.month).padStart(2, "0")}`;
+  const periodLabel = range ? `${fmtDate(range.from)} – ${fmtDate(range.to)}` : `${MONTHS[period.month - 1]} ${period.year}`;
+  const fileBase = range
+    ? `RBH-calling-report-${range.from}_to_${range.to}`
+    : `RBH-calling-report-${period.year}-${String(period.month).padStart(2, "0")}`;
 
   const doCSV = () => {
     const { columns, rows } = flatten(data);
@@ -85,11 +107,44 @@ export default function CallingReport() {
     <div>
       <PageHeader
         title="Calling Sales Report"
-        subtitle="Leads, calling coverage, and Zoom/Event attendance per salesperson — pick a week up top."
+        subtitle="Leads, calling coverage, and Zoom/Event attendance per salesperson — pick a week, or a custom date range, up top."
         actions={
           <div className="flex items-center gap-2 flex-wrap">
-            <MonthPicker value={period} onChange={setPeriod} />
-            <Listbox className="w-28" value={week} onChange={(v) => setWeek(Number(v))} options={WEEK_OPTIONS} />
+            {!range && (
+              <>
+                <MonthPicker value={period} onChange={setPeriod} />
+                <Listbox className="w-28" value={week} onChange={(v) => setWeek(Number(v))} options={WEEK_OPTIONS} />
+              </>
+            )}
+            <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-300 rounded-lg pl-2 pr-1 py-1">
+              <MdDateRange size={15} className="text-gray-400 shrink-0" />
+              <input
+                type="date"
+                className="bg-transparent text-sm outline-none w-[126px]"
+                value={draftFrom}
+                max={draftTo || undefined}
+                onChange={(e) => setDraftFrom(e.target.value)}
+                aria-label="Range start date"
+              />
+              <span className="text-gray-300 text-xs">to</span>
+              <input
+                type="date"
+                className="bg-transparent text-sm outline-none w-[126px]"
+                value={draftTo}
+                min={draftFrom || undefined}
+                onChange={(e) => setDraftTo(e.target.value)}
+                aria-label="Range end date"
+              />
+              {range ? (
+                <button onClick={clearRange} className="text-gray-400 hover:text-red-500 p-1" title="Clear the date range">
+                  <MdClose size={15} />
+                </button>
+              ) : (
+                <Button variant="secondary" size="sm" onClick={applyRange} disabled={!draftFrom || !draftTo}>
+                  Apply
+                </Button>
+              )}
+            </div>
             <Button variant="secondary" onClick={doCSV} disabled={!data}>
               <MdFileDownload size={16} /> CSV
             </Button>
@@ -107,7 +162,11 @@ export default function CallingReport() {
           <>
             <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
               <p className="text-sm text-gray-500">
-                Showing <b className="text-gray-700">{periodLabel}</b>, <b className="text-gray-700">{week === 0 ? "All Weeks" : `Week ${week}`}</b>.
+                {range ? (
+                  <>Showing <b className="text-gray-700">{periodLabel}</b>.</>
+                ) : (
+                  <>Showing <b className="text-gray-700">{periodLabel}</b>, <b className="text-gray-700">{week === 0 ? "All Weeks" : `Week ${week}`}</b>.</>
+                )}
               </p>
               <div className="flex items-center gap-2 text-xs text-gray-400">
                 {error ? (
@@ -130,7 +189,7 @@ export default function CallingReport() {
                 </button>
               </div>
             </div>
-            <CallingReportTable data={data} week={week} />
+            <CallingReportTable data={data} week={range ? 0 : week} />
           </>
         )}
       </Card>

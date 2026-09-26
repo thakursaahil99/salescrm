@@ -42,3 +42,22 @@ export const istWeekOfMonth = (date) => {
   const day = new Date(new Date(date).getTime() + IST_OFFSET_MS).getUTCDate();
   return Math.min(4, Math.max(1, Math.ceil(day / 7)));
 };
+
+// A custom [from, to] IST day range (both "YYYY-MM-DD", both inclusive), as a
+// {$gte, $lt} window — for reports that let someone pick their own dates
+// instead of a calendar month. `to`'s day+1 rolls over months/years correctly
+// since Date.UTC normalizes an out-of-range day (e.g. day 32 -> the 1st of
+// the next month) on its own.
+export function istDayRange(fromStr, toStr) {
+  const [fy, fm, fd] = fromStr.split("-").map(Number);
+  const [ty, tm, td] = toStr.split("-").map(Number);
+  return { $gte: istDate(fy, fm, fd), $lt: istDate(ty, tm, td + 1) };
+}
+
+// Same, capped at "now" — for data that shouldn't include days that haven't
+// happened yet (mirrors istMonthRange's cap).
+export function istDayRangeCapped(fromStr, toStr) {
+  const r = istDayRange(fromStr, toStr);
+  const now = new Date();
+  return { $gte: r.$gte, $lt: r.$lt > now ? now : r.$lt };
+}

@@ -26,16 +26,22 @@ export const getFiveForThree = asyncHandler(async (req, res) => {
   res.json(await buildFiveForThree(ids, month, year));
 });
 
-// @route GET /api/reports/calling?month&year  (admin, manager)
+// @route GET /api/reports/calling?month&year | ?from&to  (admin, manager)
 // "Calling Sales Report" — actuals-only activity per salesperson for one IST
 // month: calls, 1st-Zoom attendance, repeat-Zoom attendance, event attendance,
 // conversions. Shown above the 5-for-3 board. Defaults to the current month.
+// A `from`/`to` (each "YYYY-MM-DD") switches to a custom date range instead —
+// see buildCallingReport for how that changes the response shape.
 export const getCallingReport = asyncHandler(async (req, res) => {
+  const ids = await scopedSalespeople(req.user);
+  if (req.query.from && req.query.to) {
+    res.json(await buildCallingReport(ids, { from: req.query.from, to: req.query.to }));
+    return;
+  }
   const now = new Date();
   const month = parseInt(req.query.month, 10) || now.getMonth() + 1;
   const year = parseInt(req.query.year, 10) || now.getFullYear();
-  const ids = await scopedSalespeople(req.user);
-  res.json(await buildCallingReport(ids, month, year));
+  res.json(await buildCallingReport(ids, { month, year }));
 });
 
 // @route GET /api/reports/leaderboard?period=month|week|all

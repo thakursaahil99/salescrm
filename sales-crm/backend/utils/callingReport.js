@@ -4,7 +4,7 @@ import Event from "../models/Event.js";
 import IfoConversion from "../models/IfoConversion.js";
 import Lead from "../models/Lead.js";
 import User from "../models/User.js";
-import { istMonthRange, istFullMonthRange, istWeekOfMonth, weekOfIST } from "./istTime.js";
+import { istMonthRange, istFullMonthRange, istWeekOfMonth, weekOfIST, istDayRange, istDayRangeCapped } from "./istTime.js";
 
 // The "Calling Sales Report" — Week 1-4 + Month Total, one sub-row per
 // salesperson (like the 5-for-3 board), ACTUALS ONLY. A funnel off the month's
@@ -27,21 +27,27 @@ import { istMonthRange, istFullMonthRange, istWeekOfMonth, weekOfIST } from "./i
 const oid = (id) => new mongoose.Types.ObjectId(id);
 const WEEKS = [1, 2, 3, 4];
 
-export async function buildCallingReport(salespersonIds, month, year) {
+export async function buildCallingReport(salespersonIds, { month, year, from, to } = {}) {
   const ids = salespersonIds.map(oid);
-  const inMonth = istMonthRange(year, month); // capped at now — leads / conversions
-  const fullMonth = istFullMonthRange(year, month); // whole month — meeting / event lists
+  // Custom mode: someone picked their own [from, to] instead of a calendar month. There's no
+  // well-defined "week 1-4" of an arbitrary range, so custom mode skips the week breakdown
+  // entirely and reports one Total across the whole range (see `custom` branches below).
+  const custom = !!(from && to);
+  const inMonth = custom ? istDayRangeCapped(from, to) : istMonthRange(year, month); // capped at now — leads / conversions
+  const fullMonth = custom ? istDayRange(from, to) : istFullMonthRange(year, month); // whole span — meeting / event lists
 
   const [people, leadRows, monthWebinars, monthEvents] = await Promise.all([
     User.find({ _id: { $in: ids } }).select("name").sort("name").lean(),
     Lead.aggregate([
       { $match: { assignedTo: { $in: ids }, createdAt: inMonth } },
       {
-        $group: {
-          _id: { sp: "$assignedTo", w: weekOfIST("$createdAt") },
-          c: { $sum: 1 },
-          called: { $sum: { $cond: [{ $ne: ["$status", "new"] }, 1, 0] } },
-        },
+        $group: custom
+          ? { _id: "$assignedTo", c: { $sum: 1 }, called: { $sum: { $cond: [{ $ne: ["$status", "new"] }, 1, 0] } } }
+          : {
+              _id: { sp: "$assignedTo", w: weekOfIST("$createdAt") },
+              c: { $sum: 1 },
+              called: { $sum: { $cond: [{ $ne: ["$status", "new"] }, 1, 0] } },
+            },
       },
     ]),
     Webinar.find({ scheduledAt: fullMonth, status: { $ne: "cancelled" } })
@@ -93,32 +99,46 @@ export async function buildCallingReport(salespersonIds, month, year) {
     }
   }
 
-  // Conversions by (owner, week).
-  const convBy = {}; // `${sp}:${w}` -> count
+  // Conversions by owner (custom mode) or (owner, week) (month mode).
+  const convBy = {};
   for (const c of cohortConvs) {
     const owner = ownerOf[String(c.lead)];
     if (!owner) continue;
-    const w = istWeekOfMonth(c.conversionDate);
-    convBy[`${owner}:${w}`] = (convBy[`${owner}:${w}`] || 0) + 1;
+    if (custom) convBy[owner] = (convBy[owner] || 0) + 1;
+    else {
+      const w = istWeekOfMonth(c.conversionDate);
+      convBy[`${owner}:${w}`] = (convBy[`${owner}:${w}`] || 0) + 1;
+    }
   }
 
-  const leadsBy = Object.fromEntries(leadRows.map((r) => [`${r._id.sp}:${r._id.w}`, r]));
+  const leadsBy = custom
+    ? Object.fromEntries(leadRows.map((r) => [String(r._id), r]))
+    : Object.fromEntries(leadRows.map((r) => [`${r._id.sp}:${r._id.w}`, r]));
 
   const meetings = monthWebinars.map((w) => ({
     webinarId: String(w._id),
     title: w.title,
     scheduledAt: w.scheduledAt,
-    week: istWeekOfMonth(w.scheduledAt),
+    week: custom ? 0 : istWeekOfMonth(w.scheduledAt),
   }));
   const events = monthEvents.map((e) => ({
     eventId: String(e._id),
     title: e.title,
     date: e.date,
-    week: istWeekOfMonth(e.date),
+    week: custom ? 0 : istWeekOfMonth(e.date),
   }));
 
-  // one salesperson's numbers for week `w` (1-4), or the whole month (w = 0)
+  // One salesperson's numbers for week `w` (1-4) or the whole month (w = 0) — month mode.
+  // In custom mode there's only ever one section (the whole range), `w` is ignored.
   const cell = (spId, w) => {
+    if (custom) {
+      const r = leadsBy[spId];
+      const zooms = {};
+      for (const m of meetings) zooms[m.webinarId] = attBy[m.webinarId]?.[spId] || 0;
+      const evts = {};
+      for (const e of events) evts[e.eventId] = evtAttBy[e.eventId]?.[spId] || 0;
+      return { leads: r?.c || 0, called: r?.called || 0, zooms, events: evts, converted: convBy[spId] || 0 };
+    }
     const weeks = w === 0 ? WEEKS : [w];
     const lk = weeks.reduce(
       (a, wk) => {
@@ -161,12 +181,15 @@ export async function buildCallingReport(salespersonIds, month, year) {
   const monthTotal = section(0);
 
   return {
-    month,
-    year,
+    month: custom ? null : month,
+    year: custom ? null : year,
+    from: custom ? from : null,
+    to: custom ? to : null,
+    custom,
     meetings,
     events,
     showConverted: monthTotal.total.converted > 0,
-    weeks: WEEKS.map((w) => ({ label: `Week ${w}`, week: w, ...section(w) })),
-    monthTotal: { label: "Month Total", ...monthTotal },
+    weeks: custom ? [] : WEEKS.map((w) => ({ label: `Week ${w}`, week: w, ...section(w) })),
+    monthTotal: { label: custom ? "Range Total" : "Month Total", ...monthTotal },
   };
 }
