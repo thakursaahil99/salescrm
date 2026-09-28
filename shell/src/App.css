@@ -161,19 +161,6 @@ body {
 
 .shell.single { position: relative; display: block; }
 .shell.single .crm-frame { width: 100vw; height: 100vh; display: block; }
-.logout.floating {
-  position: fixed;
-  top: 10px;
-  right: 10px;
-  z-index: 1000;
-  background: #1f2937;
-  border: 1px solid #374151;
-  color: #e5e7eb;
-  opacity: 0.55;
-  transition: opacity 150ms, background-color 150ms, border-color 150ms;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-.logout.floating:hover { opacity: 1; background: #c0392b; border-color: #c0392b; }
 .placeholder {
   flex: 1;
   display: flex;

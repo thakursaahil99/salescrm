@@ -168,9 +168,6 @@ export default function App() {
   if (!isAdmin) {
     return (
       <div className="shell single">
-        <button className="logout floating" onClick={doLogout} title="Logout">
-          Logout
-        </button>
         {current && creds[current.id] ? (
           <iframe key={current.id} title={current.label} src={frameSrc} className="crm-frame" />
         ) : (

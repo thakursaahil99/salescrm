@@ -11,7 +11,6 @@ import SalesTeamList from "./pages/salesTeam/SalesTeamList.jsx";
 import Settings from "./pages/settings/Settings.jsx";
 import LeadsBoard from "./pages/leads/LeadsBoard.jsx";
 import LeadDetail from "./pages/leads/LeadDetail.jsx";
-import CallsList from "./pages/calls/CallsList.jsx";
 import WebinarsList from "./pages/webinars/WebinarsList.jsx";
 import WebinarDetail from "./pages/webinars/WebinarDetail.jsx";
 import EventsList from "./pages/events/EventsList.jsx";
@@ -40,7 +39,6 @@ export default function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/leads" element={<LeadsBoard />} />
           <Route path="/leads/:id" element={<LeadDetail />} />
-          <Route path="/calls" element={<CallsList />} />
           <Route path="/webinars" element={<WebinarsList />} />
           <Route path="/webinars/:id" element={<WebinarDetail />} />
           <Route path="/events" element={<EventsList />} />

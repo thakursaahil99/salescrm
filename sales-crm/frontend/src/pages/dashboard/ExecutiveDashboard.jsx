@@ -170,7 +170,7 @@ export default function ExecutiveDashboard({ title, subtitle }) {
           <SectionLabel hint={`Showing ${periodLabel}`}>{periodNoun}</SectionLabel>
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
             <StatCard label={leadsStatLabel} value={core.summary.monthLeads} icon={MdOutlineAssignment} to={leadsInMonth()} state={fromDash} />
-            <StatCard label="First meetings" value={core.summary.meetings} icon={MdOutlineGroups} hint="unique leads met" to="/calls" state={fromDash} />
+            <StatCard label="First meetings" value={core.summary.meetings} icon={MdOutlineGroups} hint="unique leads met" />
             <StatCard
               label="Clients won"
               value={core.summary.clients}
@@ -325,16 +325,12 @@ export default function ExecutiveDashboard({ title, subtitle }) {
                   value={insights.calls.total}
                   icon={MdOutlinePhoneInTalk}
                   hint={`${insights.calls.missed} missed`}
-                  to="/calls"
-                  state={fromDash}
                 />
                 <StatCard
                   label="Connect rate"
                   value={`${insights.calls.connectRate}%`}
                   icon={MdOutlinePercent}
                   hint={`${insights.calls.connected} of ${insights.calls.completed} completed`}
-                  to="/calls"
-                  state={fromDash}
                 />
               </div>
 

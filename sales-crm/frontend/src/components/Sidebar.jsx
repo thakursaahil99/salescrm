@@ -10,7 +10,6 @@ import {
   MdOutlineVideocam,
   MdOutlineEvent,
   MdOutlineMonetizationOn,
-  MdOutlinePhoneInTalk,
   MdOutlineInsertChartOutlined,
   MdOutlinePhoneForwarded,
   MdOutlineFilterAlt,
@@ -37,7 +36,6 @@ const SECTIONS = [
     accent: { text: "text-blue-500", head: "text-blue-500/80" },
     items: [
       { to: "/leads", label: "Leads", icon: MdOutlineAssignment },
-      { to: "/calls", label: "Calls", icon: MdOutlinePhoneInTalk },
       { to: "/webinars", label: "Zoom Meetings", icon: MdOutlineVideocam },
       { to: "/events", label: "Events", icon: MdOutlineEvent },
       { to: "/ifo", label: "Conversions", icon: MdOutlineMonetizationOn },
