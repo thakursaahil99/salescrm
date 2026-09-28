@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 // Each CRM's own backend + the login field it expects. Marketing CRM logs in
 // by username; Sales CRM's "email" field actually accepts a username OR an
@@ -36,6 +36,21 @@ function loadCreds() {
     return JSON.parse(sessionStorage.getItem(CREDS_KEY)) || null;
   } catch {
     return null;
+  }
+}
+
+// Each embedded CRM's current in-app page ("/leads/abc123", "/reports/calling",
+// …) — reported up by the child app on every navigation (see its own
+// useReportRouteToShell). Remembered per CRM so refreshing the shell tab can
+// send the iframe straight back to the page it was on instead of always
+// booting it to that app's default landing page.
+const LAST_ROUTE_KEY = "admin_crm_last_route"; // { [crmId]: "/some/path" }
+
+function loadLastRoute() {
+  try {
+    return JSON.parse(sessionStorage.getItem(LAST_ROUTE_KEY)) || {};
+  } catch {
+    return {};
   }
 }
 
@@ -131,14 +146,22 @@ export default function App() {
   // thinking the session is live. Each child app posts this message on logout
   // (see its AuthContext) so the shell can clear its own session too and drop
   // back to the Admin CRM login instead of leaving a dead CRM login in the frame.
+  // It also posts "admin-crm-route" on every in-app navigation, which we save
+  // per CRM so a refresh can restore the page the user was actually on.
   useEffect(() => {
-    const knownOrigins = new Set(CRM_DEFS.filter((c) => c.appUrl).map((c) => new URL(c.appUrl).origin));
+    const originToId = new Map(CRM_DEFS.filter((c) => c.appUrl).map((c) => [new URL(c.appUrl).origin, c.id]));
     const onMessage = (event) => {
-      if (!knownOrigins.has(event.origin)) return;
+      const id = originToId.get(event.origin);
+      if (!id) return;
       if (event.data?.type === "admin-crm-logout") {
         sessionStorage.removeItem(CREDS_KEY);
         setCreds(null);
         setActive(null);
+      } else if (event.data?.type === "admin-crm-route" && typeof event.data.path === "string") {
+        const next = { ...loadLastRoute(), [id]: event.data.path };
+        try {
+          sessionStorage.setItem(LAST_ROUTE_KEY, JSON.stringify(next));
+        } catch {}
       }
     };
     window.addEventListener("message", onMessage);
@@ -146,12 +169,21 @@ export default function App() {
   }, []);
 
   const current = CRM_DEFS.find((c) => c.id === active) || null;
+
+  // The path each iframe boots into is decided once per CRM (on first load or
+  // when switching to it) from whatever was last saved — never recomputed
+  // while that iframe is already open, or every in-app navigation would
+  // change the iframe's `src` and reload it out from under the user.
+  const initialPathRef = useRef({});
   const frameSrc = useMemo(() => {
     if (!creds || !current || !current.ready) return "";
     const c = creds[current.id];
     if (!c) return current.appUrl;
+    if (!(current.id in initialPathRef.current)) {
+      initialPathRef.current[current.id] = loadLastRoute()[current.id] || "";
+    }
     const params = new URLSearchParams({ sso_token: c.token, sso_user: JSON.stringify(c.user) });
-    return `${current.appUrl}/?${params.toString()}`;
+    return `${current.appUrl}${initialPathRef.current[current.id]}?${params.toString()}`;
   }, [current, creds]);
 
   if (!creds) return <Login onLoggedIn={setCreds} />;

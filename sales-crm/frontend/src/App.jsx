@@ -1,4 +1,5 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { useEffect } from "react";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import AuthLayout from "./layouts/AuthLayout.jsx";
 import DashboardLayout from "./layouts/DashboardLayout.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
@@ -26,7 +27,22 @@ import Leaderboard from "./pages/leaderboard/Leaderboard.jsx";
 
 const MANAGERS = [ROLES.ADMIN, ROLES.MANAGER];
 
+// When embedded under the Admin CRM shell, tell it which page we're on so a
+// refresh of the shell tab can put the iframe back here instead of always
+// booting it back to the dashboard.
+function useReportRouteToShell() {
+  const location = useLocation();
+  useEffect(() => {
+    if (window.self === window.top) return;
+    window.top.postMessage(
+      { type: "admin-crm-route", path: location.pathname + location.search },
+      "*"
+    );
+  }, [location.pathname, location.search]);
+}
+
 export default function App() {
+  useReportRouteToShell();
   return (
     <Routes>
       <Route element={<AuthLayout />}>
