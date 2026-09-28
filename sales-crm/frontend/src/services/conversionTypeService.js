@@ -4,3 +4,6 @@ export const listConversionTypes = () => api.get("/conversion-types").then((r) =
 
 export const createConversionType = (body) =>
   api.post("/conversion-types", body).then((r) => r.data);
+
+export const updateConversionType = (id, body) =>
+  api.put(`/conversion-types/${id}`, body).then((r) => r.data);

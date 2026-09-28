@@ -33,6 +33,7 @@ export default function useConversionTypes() {
   }, [reload]);
 
   const types = raw.map((t, i) => ({
+    id: t._id,
     code: t.code,
     label: t.name,
     defaultValue: t.defaultValue || 0,

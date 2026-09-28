@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
 
-// The kinds of "won" deal RBH can book — starts as just IFO and RBC, but any
-// signed-in user (admin, manager or salesperson) can add another one from
-// Settings when a new business line needs its own bucket. `code` is what's
+// The kinds of "won" deal RBH can book — starts as just IFO and RBC, but an
+// admin or manager can add/rename another one from Settings when a new
+// business line needs its own bucket. `code` is what's
 // actually stored on IfoConversion.conversionType — stable even if `name` is
 // later retitled, and how existing IFO/RBC records stay matched to whichever
 // document currently represents them (see ensureDefaults in the controller).

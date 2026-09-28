@@ -30,9 +30,7 @@ export const listConversionTypes = asyncHandler(async (req, res) => {
   res.json(rows);
 });
 
-// @route POST /api/conversion-types   { name, defaultValue? }
-// Open to any signed-in role — admin, manager or salesperson — so recording
-// the first sale of a new business line doesn't need an admin in the loop.
+// @route POST /api/conversion-types   { name, defaultValue? }   (admin, manager)
 export const createConversionType = asyncHandler(async (req, res) => {
   const name = String(req.body.name || "").trim();
   if (!name) {
@@ -52,4 +50,29 @@ export const createConversionType = asyncHandler(async (req, res) => {
   const defaultValue = Math.max(0, Number(req.body.defaultValue) || 0);
   const type = await ConversionType.create({ name, code, defaultValue, createdBy: req.user._id });
   res.status(201).json(type);
+});
+
+// @route PUT /api/conversion-types/:id   { name?, defaultValue? }   (admin, manager)
+// Renames and/or changes the default value. `code` never changes here — it's
+// what IfoConversion.conversionType actually stores, so existing records stay
+// linked to whichever type they were booked under even after a rename.
+export const updateConversionType = asyncHandler(async (req, res) => {
+  const type = await ConversionType.findById(req.params.id);
+  if (!type) {
+    res.status(404);
+    throw new Error("Conversion type not found.");
+  }
+  if (req.body.name !== undefined) {
+    const name = String(req.body.name).trim();
+    if (!name) {
+      res.status(400);
+      throw new Error("A name is required.");
+    }
+    type.name = name;
+  }
+  if (req.body.defaultValue !== undefined) {
+    type.defaultValue = Math.max(0, Number(req.body.defaultValue) || 0);
+  }
+  await type.save();
+  res.json(type);
 });

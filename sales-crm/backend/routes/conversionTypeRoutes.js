@@ -1,12 +1,14 @@
 import express from "express";
-import { listConversionTypes, createConversionType } from "../controllers/conversionTypeController.js";
-import { protect } from "../middleware/authMiddleware.js";
+import { listConversionTypes, createConversionType, updateConversionType } from "../controllers/conversionTypeController.js";
+import { protect, authorize } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 router.use(protect);
 
-// No role restriction — admin, manager and salesperson can all view and add.
+// Everyone can view — a salesperson still needs the list to pick a type
+// when recording a conversion. Adding/editing is admin & manager only.
 router.get("/", listConversionTypes);
-router.post("/", createConversionType);
+router.post("/", authorize("admin", "manager"), createConversionType);
+router.put("/:id", authorize("admin", "manager"), updateConversionType);
 
 export default router;

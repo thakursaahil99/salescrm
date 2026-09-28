@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { MdOutlineEdit, MdClose, MdCheck } from "react-icons/md";
 import PageHeader from "../../components/PageHeader.jsx";
 import Card from "../../components/ui/Card.jsx";
 import Button from "../../components/ui/Button.jsx";
@@ -12,7 +13,7 @@ import useConversionTypes from "../../hooks/useConversionTypes.js";
 import { ROLE_LABELS } from "../../utils/roles.js";
 import { initials, inrCompact } from "../../utils/format.js";
 import { updateProfile, changePassword } from "../../services/authService.js";
-import { createConversionType } from "../../services/conversionTypeService.js";
+import { createConversionType, updateConversionType } from "../../services/conversionTypeService.js";
 
 function ProfileForm() {
   const { user, refresh } = useAuth();
@@ -134,14 +135,20 @@ function PasswordForm() {
 }
 
 // Conversion types (IFO, RBC, and anything else the team wants to track) are
-// company-wide, not per-user — any role can add one here so a salesperson
-// closing an unusual deal isn't blocked waiting on an admin.
+// company-wide, not per-user. Adding/renaming is admin & manager only (the
+// card itself is only rendered for those roles — see Settings() below);
+// everyone else still reads the same list wherever a conversion type is
+// picked or filtered, via the same GET this card's own list uses.
 function ConversionTypesCard() {
   const toast = useToast();
   const { types, loading, reload } = useConversionTypes();
   const [name, setName] = useState("");
   const [defaultValue, setDefaultValue] = useState("");
   const [busy, setBusy] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [editName, setEditName] = useState("");
+  const [editValue, setEditValue] = useState("");
+  const [editBusy, setEditBusy] = useState(false);
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -160,6 +167,27 @@ function ConversionTypesCard() {
     }
   };
 
+  const startEdit = (t) => {
+    setEditingId(t.id);
+    setEditName(t.label);
+    setEditValue(t.defaultValue || "");
+  };
+  const cancelEdit = () => setEditingId(null);
+  const saveEdit = async (id) => {
+    if (!editName.trim()) return toast.error("A name is required.");
+    setEditBusy(true);
+    try {
+      await updateConversionType(id, { name: editName.trim(), defaultValue: Number(editValue) || 0 });
+      toast.success("Saved.");
+      setEditingId(null);
+      await reload();
+    } catch (err) {
+      toast.error(err);
+    } finally {
+      setEditBusy(false);
+    }
+  };
+
   return (
     <Card>
       <h2 className="font-semibold text-gray-800 mb-1">Conversion types</h2>
@@ -171,13 +199,45 @@ function ConversionTypesCard() {
       {loading ? (
         <Spinner />
       ) : (
-        <div className="flex flex-wrap gap-2 mb-4">
-          {types.map((t) => (
-            <Badge key={t.code} color={t.color}>
-              {t.label}
-              {t.defaultValue ? ` · ₹${inrCompact(t.defaultValue)}` : ""}
-            </Badge>
-          ))}
+        <div className="space-y-2 mb-4">
+          {types.map((t) =>
+            editingId === t.id ? (
+              <div key={t.id} className="flex flex-wrap items-end gap-2 rounded-lg border border-gray-200 p-2.5">
+                <div className="flex-1 min-w-[140px]">
+                  <Input label="Name" value={editName} onChange={(e) => setEditName(e.target.value)} />
+                </div>
+                <div className="w-36">
+                  <Input
+                    label="Default deal value (₹)"
+                    type="number"
+                    min="0"
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                  />
+                </div>
+                <Button size="sm" disabled={editBusy} onClick={() => saveEdit(t.id)} title="Save">
+                  <MdCheck size={16} />
+                </Button>
+                <Button variant="secondary" size="sm" disabled={editBusy} onClick={cancelEdit} title="Cancel">
+                  <MdClose size={16} />
+                </Button>
+              </div>
+            ) : (
+              <div key={t.id} className="flex items-center gap-2">
+                <Badge color={t.color}>
+                  {t.label}
+                  {t.defaultValue ? ` · ₹${inrCompact(t.defaultValue)}` : ""}
+                </Badge>
+                <button
+                  onClick={() => startEdit(t)}
+                  className="text-gray-400 hover:text-primary p-1"
+                  title={`Edit "${t.label}"`}
+                >
+                  <MdOutlineEdit size={15} />
+                </button>
+              </div>
+            )
+          )}
         </div>
       )}
 
@@ -207,15 +267,20 @@ function ConversionTypesCard() {
 }
 
 export default function Settings() {
+  const { user } = useAuth();
+  const canManageConversionTypes = user?.role === "admin" || user?.role === "manager";
+
   return (
     <div>
       <PageHeader title="Settings" subtitle="Your profile and account security." />
       <div className="grid xl:grid-cols-2 gap-5 items-start">
         <ProfileForm />
         <PasswordForm />
-        <div className="xl:col-span-2">
-          <ConversionTypesCard />
-        </div>
+        {canManageConversionTypes && (
+          <div className="xl:col-span-2">
+            <ConversionTypesCard />
+          </div>
+        )}
       </div>
     </div>
   );
