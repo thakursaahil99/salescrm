@@ -15,8 +15,8 @@ import "./index.css";
   const userRaw = params.get("sso_user");
   if (token && userRaw) {
     try {
-      localStorage.setItem("mcrm_token", token);
-      localStorage.setItem("mcrm_user", userRaw);
+      sessionStorage.setItem("mcrm_token", token);
+      sessionStorage.setItem("mcrm_user", userRaw);
     } catch {}
     params.delete("sso_token");
     params.delete("sso_user");

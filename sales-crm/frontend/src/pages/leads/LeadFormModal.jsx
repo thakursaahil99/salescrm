@@ -7,10 +7,8 @@ import { useToast } from "../../context/ToastContext.jsx";
 import { useAuth } from "../../context/AuthContext.jsx";
 import { ROLES } from "../../utils/roles.js";
 import { LEAD_SOURCE, optionsFrom } from "../../utils/constants.js";
-import { fmtDate, byNearestFirst } from "../../utils/format.js";
 import { createLead, updateLead } from "../../services/leadService.js";
 import { getAssignable } from "../../services/userService.js";
-import { listWebinars } from "../../services/webinarService.js";
 
 export default function LeadFormModal({ open, onClose, onSaved, lead }) {
   const { user } = useAuth();
@@ -18,41 +16,18 @@ export default function LeadFormModal({ open, onClose, onSaved, lead }) {
   const editing = !!lead;
   const canAssign = user.role !== ROLES.SALESPERSON;
   const [people, setPeople] = useState([]);
-  const [webinars, setWebinars] = useState([]);
 
   const {
     register,
     handleSubmit,
     reset,
-    watch,
-    setValue,
     formState: { errors, isSubmitting },
   } = useForm();
-  const webinarId = watch("webinar");
-  const fromWebinar = !editing && !!webinarId;
 
   useEffect(() => {
     if (!open) return;
     if (canAssign) getAssignable().then(setPeople).catch(() => {});
-    if (!editing) listWebinars().then((rows) => setWebinars(byNearestFirst(rows, "scheduledAt"))).catch(() => {});
-  }, [open, canAssign, editing]);
-
-  // New leads mostly come from whichever Zoom is coming up next — preselect it
-  // once the list (soonest-upcoming first) has rendered its <option>s. The
-  // user can clear it.
-  useEffect(() => {
-    if (open && !editing && webinars[0]?._id) {
-      setValue("webinar", webinars[0]._id, { shouldDirty: false });
-    }
-  }, [open, editing, webinars, setValue]);
-
-  // Keep Source in step with the Zoom link — picking / clearing a Zoom flips it
-  // to "Zoom meeting" / "Other". It's still a normal dropdown: the salesperson
-  // can then set it to Social, Referral, Cold call, etc.
-  useEffect(() => {
-    if (!open || editing) return;
-    setValue("source", webinarId ? "webinar" : "other", { shouldDirty: false });
-  }, [open, editing, webinarId, setValue]);
+  }, [open, canAssign]);
 
   // Populate the form only when the modal opens (or the target lead changes) —
   // the lead detail page polls in the background and re-creates the `lead`
@@ -70,7 +45,6 @@ export default function LeadFormModal({ open, onClose, onSaved, lead }) {
       potentialValue: lead?.potentialValue || "",
       nextFollowUpDate: lead?.nextFollowUpDate ? lead.nextFollowUpDate.slice(0, 10) : "",
       assignedTo: lead?.assignedTo?._id || lead?.assignedTo || "",
-      webinar: (!editing && webinars[0]?._id) || "",
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, lead?._id]);
@@ -81,10 +55,8 @@ export default function LeadFormModal({ open, onClose, onSaved, lead }) {
       phone: (values.phone || "").replace(/\D/g, ""),
       potentialValue: Number(values.potentialValue) || 0,
       nextFollowUpDate: values.nextFollowUpDate || undefined,
-      webinar: values.webinar || undefined,
     };
     if (!canAssign) delete payload.assignedTo;
-    if (editing) delete payload.webinar;
     try {
       const saved = editing ? await updateLead(lead._id, payload) : await createLead(payload);
       toast.success(editing ? "Lead updated." : "Lead added.");
@@ -138,7 +110,6 @@ export default function LeadFormModal({ open, onClose, onSaved, lead }) {
         <Select
           label="Source"
           options={optionsFrom(LEAD_SOURCE)}
-          hint={fromWebinar ? "From the Zoom meeting below — change if it came from elsewhere." : undefined}
           {...register("source")}
         />
         <Input
@@ -154,19 +125,6 @@ export default function LeadFormModal({ open, onClose, onSaved, lead }) {
             placeholder="— Me —"
             options={people.map((p) => ({ value: p._id, label: p.name }))}
             {...register("assignedTo")}
-          />
-        )}
-        {!editing && (
-          <Select
-            label="From Zoom meeting"
-            hint="If this lead came from a Zoom meeting, pick it — they'll be registered for it."
-            placeholder="— Not from a Zoom meeting —"
-            className="sm:col-span-2"
-            options={webinars.map((w) => ({
-              value: w._id,
-              label: `${w.title} · ${fmtDate(w.scheduledAt)}`,
-            }))}
-            {...register("webinar")}
           />
         )}
       </form>

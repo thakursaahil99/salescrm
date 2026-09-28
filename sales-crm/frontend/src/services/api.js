@@ -8,9 +8,12 @@ const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "/api",
 });
 
-// Attach the JWT to every request once the user is logged in.
+// Attach the JWT to every request once the user is logged in. Kept in
+// sessionStorage (not localStorage) so a login is scoped to one tab — opening
+// the same URL in a fresh tab lands on the login screen instead of silently
+// reusing another tab's session.
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("rbh_token");
+  const token = sessionStorage.getItem("rbh_token");
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
@@ -22,8 +25,8 @@ api.interceptors.response.use(
   (res) => res,
   (err) => {
     if (err.response?.status === 401 && window.location.pathname !== "/login") {
-      localStorage.removeItem("rbh_token");
-      localStorage.removeItem("rbh_user");
+      sessionStorage.removeItem("rbh_token");
+      sessionStorage.removeItem("rbh_user");
       window.location.href = "/login";
     }
     return Promise.reject(err.response?.data?.message || err.message);

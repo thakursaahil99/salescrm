@@ -10,16 +10,16 @@ export function AuthProvider({ children }) {
 
   const applyUser = useCallback((u) => {
     setUser(u);
-    if (u) localStorage.setItem("rbh_user", JSON.stringify(u));
-    else localStorage.removeItem("rbh_user");
+    if (u) sessionStorage.setItem("rbh_user", JSON.stringify(u));
+    else sessionStorage.removeItem("rbh_user");
   }, []);
 
   // Re-validate the stored token against the server on first load — a
-  // token surviving in localStorage doesn't mean it's still valid (it may
+  // token surviving in sessionStorage doesn't mean it's still valid (it may
   // have expired, or the account may have been deactivated since the
   // browser tab was last open).
   useEffect(() => {
-    const token = localStorage.getItem("rbh_token");
+    const token = sessionStorage.getItem("rbh_token");
     if (!token) {
       setLoading(false);
       return;

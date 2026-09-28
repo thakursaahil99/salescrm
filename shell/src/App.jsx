@@ -26,11 +26,14 @@ const CRM_DEFS = [
   { id: "hrm", label: "HRM", appUrl: "", apiUrl: "", ready: false },
 ];
 
+// Kept in sessionStorage (not localStorage) so a login is scoped to one tab —
+// opening the same URL in a fresh tab lands back on the Admin CRM login
+// instead of silently reusing another tab's session.
 const CREDS_KEY = "admin_crm_creds"; // { [crmId]: { token, user } }
 
 function loadCreds() {
   try {
-    return JSON.parse(localStorage.getItem(CREDS_KEY)) || null;
+    return JSON.parse(sessionStorage.getItem(CREDS_KEY)) || null;
   } catch {
     return null;
   }
@@ -70,7 +73,7 @@ function Login({ onLoggedIn }) {
         setError("That username/email and password didn't work on either CRM.");
         return;
       }
-      localStorage.setItem(CREDS_KEY, JSON.stringify(creds));
+      sessionStorage.setItem(CREDS_KEY, JSON.stringify(creds));
       onLoggedIn(creds);
     } catch (err) {
       setError(err.message || "Login failed.");
@@ -123,7 +126,7 @@ export default function App() {
   }, [creds, active]);
 
   // A child CRM, embedded in the iframe, has its own logout button (in its own
-  // sidebar/nav). Clicking that only clears ITS localStorage and shows ITS own
+  // sidebar/nav). Clicking that only clears ITS sessionStorage and shows ITS own
   // login screen inside the frame — the shell never finds out, so it keeps
   // thinking the session is live. Each child app posts this message on logout
   // (see its AuthContext) so the shell can clear its own session too and drop
@@ -133,7 +136,7 @@ export default function App() {
     const onMessage = (event) => {
       if (!knownOrigins.has(event.origin)) return;
       if (event.data?.type === "admin-crm-logout") {
-        localStorage.removeItem(CREDS_KEY);
+        sessionStorage.removeItem(CREDS_KEY);
         setCreds(null);
         setActive(null);
       }
@@ -154,7 +157,7 @@ export default function App() {
   if (!creds) return <Login onLoggedIn={setCreds} />;
 
   const doLogout = () => {
-    localStorage.removeItem(CREDS_KEY);
+    sessionStorage.removeItem(CREDS_KEY);
     setCreds(null);
     setActive(null);
   };

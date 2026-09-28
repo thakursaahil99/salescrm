@@ -275,16 +275,7 @@ export const createLead = asyncHandler(async (req, res) => {
   let assignedTo = req.body.assignedTo || req.user._id;
   if (req.user.role === "salesperson") assignedTo = req.user._id;
 
-  // A lead can be captured straight from a webinar — if so it's registered for
-  // that webinar. An explicit, valid `source` still wins (the lead may have
-  // come from Social / a referral and just been added to an upcoming Zoom);
-  // otherwise a linked webinar implies source "webinar".
-  const webinar = req.body.webinar ? await Webinar.findById(req.body.webinar) : null;
-  const source = LEAD_SOURCES.includes(req.body.source)
-    ? req.body.source
-    : webinar
-    ? "webinar"
-    : "other";
+  const source = LEAD_SOURCES.includes(req.body.source) ? req.body.source : "other";
 
   const lead = await Lead.create({
     name,
@@ -303,12 +294,6 @@ export const createLead = asyncHandler(async (req, res) => {
 
   await logRemark(lead._id, req.user._id, "Lead created.", "system");
   await syncFollowUpReminder(lead, req.user._id);
-
-  if (webinar) {
-    webinar.registrations.push({ lead: lead._id });
-    await webinar.save();
-    await logRemark(lead._id, req.user._id, `Came in from Zoom meeting: ${webinar.title}`, "system");
-  }
 
   res.status(201).json(await lead.populate("assignedTo", "name"));
 });

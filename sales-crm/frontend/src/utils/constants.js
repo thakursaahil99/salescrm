@@ -95,7 +95,6 @@ export const moveBlocked = (from, to, history) => {
 };
 
 export const LEAD_SOURCE = {
-  webinar: { label: "Zoom meeting" },
   referral: { label: "Referral" },
   cold_call: { label: "Cold call" },
   social: { label: "Social" },

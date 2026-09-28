@@ -5,7 +5,7 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((cfg) => {
-  const token = localStorage.getItem("mcrm_token");
+  const token = sessionStorage.getItem("mcrm_token");
   if (token) cfg.headers.Authorization = `Bearer ${token}`;
   return cfg;
 });
@@ -14,8 +14,8 @@ api.interceptors.response.use(
   (res) => res,
   (err) => {
     if (err.response?.status === 401) {
-      localStorage.removeItem("mcrm_token");
-      localStorage.removeItem("mcrm_user");
+      sessionStorage.removeItem("mcrm_token");
+      sessionStorage.removeItem("mcrm_user");
       if (!window.location.pathname.startsWith("/login")) window.location.href = "/login";
     }
     return Promise.reject(err);

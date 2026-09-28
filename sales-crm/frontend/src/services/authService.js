@@ -2,19 +2,19 @@ import api from "./api.js";
 
 export async function login(email, password) {
   const { data } = await api.post("/auth/login", { email, password });
-  localStorage.setItem("rbh_token", data.token);
-  localStorage.setItem("rbh_user", JSON.stringify(data.user));
+  sessionStorage.setItem("rbh_token", data.token);
+  sessionStorage.setItem("rbh_user", JSON.stringify(data.user));
   return data.user;
 }
 
 export function logout() {
-  localStorage.removeItem("rbh_token");
-  localStorage.removeItem("rbh_user");
+  sessionStorage.removeItem("rbh_token");
+  sessionStorage.removeItem("rbh_user");
 }
 
 export function getStoredUser() {
   try {
-    return JSON.parse(localStorage.getItem("rbh_user"));
+    return JSON.parse(sessionStorage.getItem("rbh_user"));
   } catch {
     return null;
   }

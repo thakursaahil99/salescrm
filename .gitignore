@@ -9,3 +9,4 @@ build/
 Thumbs.db
 .vercel
 .mongo-data/
+sales-crm/backend/backups/

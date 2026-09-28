@@ -15,8 +15,8 @@ import "./index.css";
   const userRaw = params.get("sso_user");
   if (token && userRaw) {
     try {
-      localStorage.setItem("rbh_token", token);
-      localStorage.setItem("rbh_user", userRaw);
+      sessionStorage.setItem("rbh_token", token);
+      sessionStorage.setItem("rbh_user", userRaw);
     } catch {}
     params.delete("sso_token");
     params.delete("sso_user");

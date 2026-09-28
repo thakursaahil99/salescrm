@@ -25,7 +25,6 @@ export const LEAD_STATUSES = [
 export const LEAD_CLOSED = ["converted", "dead", "invalid"];
 
 export const LEAD_SOURCES = [
-  "webinar",
   "referral",
   "cold_call",
   "social",
