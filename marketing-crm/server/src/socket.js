@@ -5,7 +5,10 @@ let io = null;
 
 export function initSocket(httpServer) {
   io = new Server(httpServer, {
-    cors: { origin: config.clientUrl, credentials: true },
+    // CLIENT_URL is comma-separated (see app.js's CORS setup) — split it the
+    // same way here so socket.io accepts every allowed origin, not just a
+    // literal match on the whole joined string.
+    cors: { origin: config.clientUrl.split(",").map((s) => s.trim()), credentials: true },
   });
 
   io.on("connection", (socket) => {

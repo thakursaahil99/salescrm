@@ -22,10 +22,13 @@ export function createApp() {
   app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
   // Allows both the app's own client and the Admin CRM shell (which calls
   // /auth/login directly from a different origin to fetch this CRM's token).
-  // SHELL_URL is a separate env var (comma-separated for more than one) since the
-  // shell is a different deployable app from this CRM's own client.
+  // CLIENT_URL is comma-separated (like the Sales CRM's) so one shared value
+  // can list every allowed frontend when both CRMs run in the same process.
+  // SHELL_URL is kept as a separate, additive var for a shell origin that
+  // isn't already in CLIENT_URL.
+  const clientOrigins = config.clientUrl.split(",").map((s) => s.trim());
   const shellOrigins = (process.env.SHELL_URL || "http://localhost:7000").split(",").map((s) => s.trim());
-  const allowedOrigins = [config.clientUrl, ...shellOrigins];
+  const allowedOrigins = [...new Set([...clientOrigins, ...shellOrigins])];
   app.use(cors({ origin: allowedOrigins, credentials: true }));
   app.use(compression());
   app.use(express.json({ limit: "2mb" }));
