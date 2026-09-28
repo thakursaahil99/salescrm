@@ -198,26 +198,33 @@ export const pipelineMeta = asyncHandler(async (req, res) => {
 export const getLead = asyncHandler(async (req, res) => {
   const lead = await Lead.findOne({ _id: req.params.id, ...(await leadScope(req.user)) })
     .populate("assignedTo", "name email")
-    .populate("createdBy", "name");
+    .populate("createdBy", "name")
+    .lean();
   if (!lead) {
     res.status(404);
     throw new Error("Lead not found.");
   }
-  const remarks = await Remark.find({ lead: lead._id })
-    .sort("-createdAt")
-    .limit(100)
-    .populate("author", "name")
-    .lean();
 
-  const out = lead.toObject();
+  // These four don't depend on one another — fired together instead of one
+  // after another so opening a lead is one round-trip deep, not four.
+  const [remarks, webinarDocs, conv, booking] = await Promise.all([
+    Remark.find({ lead: lead._id }).sort("-createdAt").limit(100).populate("author", "name").lean(),
+    // Every webinar this lead is on — title, date, and whether they attended.
+    // Powers the "needed a second Zoom" flow on the lead page: a lead can be
+    // walked through extra webinars here without their pipeline stage moving.
+    Webinar.find({ "registrations.lead": lead._id })
+      .select("title scheduledAt status registrations")
+      .sort("scheduledAt")
+      .lean(),
+    lead.status === "converted"
+      ? IfoConversion.findOne({ lead: lead._id })
+          .select("dealValue amountReceived conversionType nextInstallmentDate nextInstallmentAmount nextInstallmentNote")
+          .lean()
+      : null,
+    EventBooking.findOne({ lead: lead._id }).sort("-createdAt").lean(),
+  ]);
 
-  // Every webinar this lead is on — title, date, and whether they attended.
-  // Powers the "needed a second Zoom" flow on the lead page: a lead can be
-  // walked through extra webinars here without their pipeline stage moving.
-  const webinarDocs = await Webinar.find({ "registrations.lead": lead._id })
-    .select("title scheduledAt status registrations")
-    .sort("scheduledAt")
-    .lean();
+  const out = lead;
   out.webinars = webinarDocs.map((w) => {
     const reg = w.registrations.find((r) => String(r.lead) === String(lead._id));
     return {
@@ -231,22 +238,16 @@ export const getLead = asyncHandler(async (req, res) => {
     };
   });
 
-  if (out.status === "converted") {
-    const conv = await IfoConversion.findOne({ lead: lead._id })
-      .select("dealValue amountReceived conversionType nextInstallmentDate nextInstallmentAmount nextInstallmentNote")
-      .lean();
-    if (conv) {
-      out.conversionId = conv._id;
-      out.dealValue = conv.dealValue;
-      out.amountReceived = conv.amountReceived;
-      out.conversionType = conv.conversionType;
-      out.nextInstallmentDate = conv.nextInstallmentDate || null;
-      out.nextInstallmentAmount = conv.nextInstallmentAmount || null;
-      out.nextInstallmentNote = conv.nextInstallmentNote || null;
-    }
+  if (conv) {
+    out.conversionId = conv._id;
+    out.dealValue = conv.dealValue;
+    out.amountReceived = conv.amountReceived;
+    out.conversionType = conv.conversionType;
+    out.nextInstallmentDate = conv.nextInstallmentDate || null;
+    out.nextInstallmentAmount = conv.nextInstallmentAmount || null;
+    out.nextInstallmentNote = conv.nextInstallmentNote || null;
   }
 
-  const booking = await EventBooking.findOne({ lead: lead._id }).sort("-createdAt").lean();
   if (booking) out.seatBooking = { amount: booking.amount, at: booking.createdAt };
 
   res.json({ lead: out, remarks });
