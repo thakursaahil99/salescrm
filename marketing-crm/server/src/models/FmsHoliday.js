@@ -10,4 +10,6 @@ const fmsHolidaySchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export default mongoose.model("FmsHoliday", fmsHolidaySchema);
+// Collection explicitly named "marketing_fmsholidays" — this app's DB now
+// shares a single "crm" database with the Sales CRM.
+export default mongoose.model("FmsHoliday", fmsHolidaySchema, "marketing_fmsholidays");

@@ -35,6 +35,13 @@ import { useAuth } from "../../context/AuthContext.jsx";
 import { useLiveData } from "../../hooks/useLiveData.js";
 import { ROLES } from "../../utils/roles.js";
 import { LEAD_STATUS, LEAD_STATUS_ORDER, LEAD_SOURCE, moveBlocked } from "../../utils/constants.js";
+
+// "Converted" is deliberately left out of the quick Move-stage buttons below —
+// it's a financial event (deal value, payment), not just a label, and only
+// "Record conversion" (which asks for that money) is allowed to set it. A
+// click here used to be able to mark a lead Converted with no deal behind it
+// at all, silently vanishing from every revenue report.
+const MOVE_STAGE_OPTIONS = LEAD_STATUS_ORDER.filter((s) => s !== "converted");
 import { fmtDateTime, fmtDateTimeFull, fmtDate, fromNow, inr, initials, pct, byNearestFirst } from "../../utils/format.js";
 import {
   getLead,
@@ -415,7 +422,7 @@ export default function LeadDetail() {
         <Card padding="p-4">
           <h3 className="font-bold text-gray-900 mb-3">Move stage</h3>
             <div className="flex flex-wrap gap-2 mb-3">
-              {LEAD_STATUS_ORDER.map((s) => {
+              {MOVE_STAGE_OPTIONS.map((s) => {
                 const blocked = moveBlocked(lead.status, s, lead.statusHistory);
                 const selected = nextStatus === s;
                 return (
@@ -437,7 +444,7 @@ export default function LeadDetail() {
                 );
               })}
             </div>
-            {LEAD_STATUS_ORDER.some((s) => moveBlocked(lead.status, s, lead.statusHistory)) && (
+            {MOVE_STAGE_OPTIONS.some((s) => moveBlocked(lead.status, s, lead.statusHistory)) && (
               <p className="mb-3 text-xs font-semibold text-amber-700">
                 {lead.status === "followup"
                   ? "Leads move forward only — resume this one at the stage it reached, or move it on."

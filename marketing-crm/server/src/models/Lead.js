@@ -25,4 +25,7 @@ leadSchema.index({ timestamp: -1 });
 leadSchema.index({ stage: 1 });
 leadSchema.index({ siteName: "text", contactPerson: "text", location: "text" });
 
-export default mongoose.model("Lead", leadSchema);
+// Collection explicitly named "marketing_leads" — this app's DB now shares
+// a single "crm" database with the Sales CRM, which has its own unrelated
+// "leads" collection (its sales pipeline, not marketing outreach).
+export default mongoose.model("Lead", leadSchema, "marketing_leads");

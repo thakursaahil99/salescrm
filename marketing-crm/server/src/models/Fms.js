@@ -35,4 +35,6 @@ const fmsSchema = new mongoose.Schema(
 fmsSchema.index({ name: 1 });
 fmsSchema.index({ deleted: 1 });
 
-export default mongoose.model("Fms", fmsSchema);
+// Collection explicitly named "marketing_fms" — this app's DB now shares a
+// single "crm" database with the Sales CRM.
+export default mongoose.model("Fms", fmsSchema, "marketing_fms");

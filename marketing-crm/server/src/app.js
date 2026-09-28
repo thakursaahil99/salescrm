@@ -48,7 +48,6 @@ export function createApp() {
   app.use("/api/auth/login", loginLimiter);
 
   app.get("/api/health", (req, res) => res.json({ ok: true, service: "marketing-crm-server" }));
-
   app.use("/api/auth", authRoutes);
   app.use("/api/leads", leadRoutes);
   app.use("/api/dashboard", dashboardRoutes);

@@ -11,4 +11,7 @@ const remarkSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export default mongoose.model("Remark", remarkSchema);
+// Collection explicitly named "marketing_remarks" — this app's DB now
+// shares a single "crm" database with the Sales CRM, which has its own
+// unrelated "remarks" collection.
+export default mongoose.model("Remark", remarkSchema, "marketing_remarks");

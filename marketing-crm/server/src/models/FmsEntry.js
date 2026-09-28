@@ -37,4 +37,6 @@ fmsEntrySchema.index({ fmsId: 1, uidNorm: 1 }, { unique: true });
 fmsEntrySchema.index({ fmsId: 1, assignedTo: 1 });
 fmsEntrySchema.index({ fmsId: 1, entryDate: -1 });
 
-export default mongoose.model("FmsEntry", fmsEntrySchema);
+// Collection explicitly named "marketing_fmsentries" — this app's DB now
+// shares a single "crm" database with the Sales CRM.
+export default mongoose.model("FmsEntry", fmsEntrySchema, "marketing_fmsentries");

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // Each CRM's own backend + the login field it expects. Marketing CRM logs in
 // by username; Sales CRM's "email" field actually accepts a username OR an
@@ -157,6 +157,8 @@ export default function App() {
         sessionStorage.removeItem(CREDS_KEY);
         setCreds(null);
         setActive(null);
+        setOpenedIds([]);
+        frameSrcRef.current = {};
       } else if (event.data?.type === "admin-crm-route" && typeof event.data.path === "string") {
         const next = { ...loadLastRoute(), [id]: event.data.path };
         try {
@@ -170,20 +172,24 @@ export default function App() {
 
   const current = CRM_DEFS.find((c) => c.id === active) || null;
 
-  // The path each iframe boots into is decided once per CRM (on first load or
-  // when switching to it) from whatever was last saved — never recomputed
-  // while that iframe is already open, or every in-app navigation would
-  // change the iframe's `src` and reload it out from under the user.
-  const initialPathRef = useRef({});
-  const frameSrc = useMemo(() => {
-    if (!creds || !current || !current.ready) return "";
+  // Each CRM's iframe is built and mounted ONCE, the first time it's opened,
+  // then kept alive in the DOM forever after (just hidden/shown with CSS) —
+  // see the render below. Switching tabs previously unmounted the iframe
+  // that wasn't active, so coming back to it reloaded that whole child app
+  // (and re-ran its token check) from scratch every time. `openedIds` tracks
+  // which CRMs have been opened at least once this session; `frameSrcRef`
+  // holds each one's `src`, computed only on first open so later renders —
+  // or a tab switch — never change it out from under the mounted iframe.
+  const [openedIds, setOpenedIds] = useState([]);
+  const frameSrcRef = useRef({});
+  useEffect(() => {
+    if (!current || !current.ready || !creds) return;
     const c = creds[current.id];
-    if (!c) return current.appUrl;
-    if (!(current.id in initialPathRef.current)) {
-      initialPathRef.current[current.id] = loadLastRoute()[current.id] || "";
-    }
+    if (!c || frameSrcRef.current[current.id]) return;
+    const lastPath = loadLastRoute()[current.id] || "";
     const params = new URLSearchParams({ sso_token: c.token, sso_user: JSON.stringify(c.user) });
-    return `${current.appUrl}${initialPathRef.current[current.id]}?${params.toString()}`;
+    frameSrcRef.current[current.id] = `${current.appUrl}${lastPath}?${params.toString()}`;
+    setOpenedIds((prev) => (prev.includes(current.id) ? prev : [...prev, current.id]));
   }, [current, creds]);
 
   if (!creds) return <Login onLoggedIn={setCreds} />;
@@ -192,6 +198,8 @@ export default function App() {
     sessionStorage.removeItem(CREDS_KEY);
     setCreds(null);
     setActive(null);
+    setOpenedIds([]);
+    frameSrcRef.current = {};
   };
 
   // The multi-CRM switcher is an admin-only view: only someone who is "admin"
@@ -203,8 +211,8 @@ export default function App() {
   if (!isAdmin) {
     return (
       <div className="shell single">
-        {current && creds[current.id] ? (
-          <iframe key={current.id} title={current.label} src={frameSrc} className="crm-frame" />
+        {current && frameSrcRef.current[current.id] ? (
+          <iframe key={current.id} title={current.label} src={frameSrcRef.current[current.id]} className="crm-frame" />
         ) : (
           <div className="placeholder">No CRM access found for this login.</div>
         )}
@@ -244,11 +252,19 @@ export default function App() {
         </button>
       </aside>
       <main className="content">
-        {current && current.ready && creds[current.id] ? (
-          <iframe key={current.id} title={current.label} src={frameSrc} className="crm-frame" />
-        ) : (
-          <div className="placeholder">Pick a CRM from the left.</div>
-        )}
+        {openedIds.map((id) => {
+          const def = CRM_DEFS.find((c) => c.id === id);
+          return (
+            <iframe
+              key={id}
+              title={def.label}
+              src={frameSrcRef.current[id]}
+              className="crm-frame"
+              style={{ display: active === id ? "block" : "none" }}
+            />
+          );
+        })}
+        {!openedIds.length && <div className="placeholder">Pick a CRM from the left.</div>}
       </main>
     </div>
   );

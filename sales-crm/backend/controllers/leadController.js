@@ -468,6 +468,15 @@ export const updateLeadStatus = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error(`status must be one of: ${LEAD_STATUSES.join(", ")}`);
   }
+  // "Converted" is a financial event, not just a label — it must carry a deal
+  // value and go through POST /api/ifo (which sets this same status field
+  // itself once the conversion record exists). Accepting it here let a lead
+  // get marked Converted with no deal behind it at all, silently missing from
+  // every revenue report.
+  if (status === "converted") {
+    res.status(400);
+    throw new Error('Use "Record conversion" to mark a lead Converted — it needs a deal value.');
+  }
   assertValidDate(res, nextFollowUpDate, "Next follow-up date");
   // Capped well above the usual ~₹2,000 ask so a fat-fingered extra zero can't
   // post a huge "booking". Checked up front — a rejected amount must never
@@ -508,19 +517,6 @@ export const updateLeadStatus = asyncHandler(async (req, res) => {
     }
   }
 
-  // Moving a lead OUT of "Converted" un-does the sale: its IfoConversion (deal
-  // value, payment log) and instalment reminder are removed so revenue, client
-  // counts and the 5-for-3 report everywhere stop counting this lead. The
-  // frontend confirms this with the user first. A timeline line records it.
-  let removedConversion = null;
-  if (from === "converted" && status !== "converted") {
-    removedConversion = await IfoConversion.findOne({ lead: lead._id }).lean();
-    if (removedConversion) {
-      await IfoConversion.deleteMany({ lead: lead._id });
-      await Reminder.deleteMany({ lead: lead._id, kind: "installment" });
-    }
-  }
-
   lead.status = status;
   if ((status === "dead" || status === "invalid") && lostReason) lead.lostReason = lostReason;
   if (nextFollowUpDate !== undefined) lead.nextFollowUpDate = nextFollowUpDate || undefined;
@@ -546,15 +542,28 @@ export const updateLeadStatus = asyncHandler(async (req, res) => {
     }
   }
 
-  if (removedConversion) {
-    await logRemark(
-      lead._id,
-      req.user._id,
-      `Conversion removed — lead moved out of Converted (was a ${inr(removedConversion.dealValue)} deal, ${inr(
-        removedConversion.amountReceived
-      )} collected). No longer counts toward revenue or clients.`,
-      "system"
+  // Moving a lead straight to "Event attended" / "Zoom 1 Attended" from here
+  // (this generic stage-move) used to leave the event's/webinar's own
+  // attendee record out of sync — normally it's ticking "attended" on the
+  // Event/Zoom page that marks the record AND auto-advances the lead (see
+  // setInvitee / setAttendance); this is that same sync run in the other
+  // direction, so the two ways of reaching this stage agree with each other.
+  // Mirrors what undoLeadStatus clears when the move is undone.
+  let markedAttendance = null;
+  if (status === "event_attended" && from !== "event_attended") {
+    const r = await Event.updateMany(
+      { "invitees.lead": lead._id },
+      { $set: { "invitees.$[i].attended": true } },
+      { arrayFilters: [{ "i.lead": lead._id, "i.attended": { $ne: true } }] }
     );
+    if (r.modifiedCount) markedAttendance = "event";
+  } else if (status === "webinar_attended" && from !== "webinar_attended") {
+    const r = await Webinar.updateMany(
+      { "registrations.lead": lead._id },
+      { $set: { "registrations.$[r].attended": true } },
+      { arrayFilters: [{ "r.lead": lead._id, "r.attended": { $ne: true } }] }
+    );
+    if (r.modifiedCount) markedAttendance = "Zoom";
   }
 
   const label = (s) => LEAD_STATUS_LABELS[s] || s;
@@ -562,6 +571,7 @@ export const updateLeadStatus = asyncHandler(async (req, res) => {
     ? new Date(nextFollowUpDate).toLocaleDateString("en-IN")
     : null;
   const followNote = followLabel ? ` · follow-up ${followLabel}` : "";
+  const attendanceNote = markedAttendance ? ` Attendance marked on the ${markedAttendance}.` : "";
 
   // Only leave a timeline entry when there's something to record — a bare
   // follow-up date change with no status move and no note still gets a line,
@@ -570,7 +580,7 @@ export const updateLeadStatus = asyncHandler(async (req, res) => {
   if (from !== status) {
     text = `Status changed: ${label(from)} → ${label(status)}${
       trimmedNote ? ` — ${trimmedNote}` : ""
-    }${followNote}`;
+    }${followNote}${attendanceNote}`;
   } else if (trimmedNote) {
     text = `${trimmedNote}${followNote}`;
   } else if (followLabel) {

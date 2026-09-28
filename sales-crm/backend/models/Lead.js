@@ -48,7 +48,9 @@ const statusStepSchema = new mongoose.Schema(
 const leadSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true, maxlength: 200 },
-    phone: { type: String, required: true, trim: true, maxlength: 40 },
+    // Indexed — every new lead is checked against this field for a duplicate
+    // before it's created, so this lookup runs on every single "Add lead".
+    phone: { type: String, required: true, trim: true, maxlength: 40, index: true },
     email: { type: String, lowercase: true, trim: true, maxlength: 200 },
     restaurantName: { type: String, trim: true, maxlength: 200 },
     city: { type: String, trim: true, maxlength: 120 },
@@ -75,6 +77,15 @@ const leadSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// `timestamps: true` doesn't index `createdAt` on its own — added explicitly
+// since every report (Calling Report, dashboard, 5-for-3) filters leads by
+// the month/range they were created in.
+leadSchema.index({ createdAt: -1 });
+// Every scoped list (a salesperson's/manager's leads) filters on `assignedTo`
+// and usually sorts by `createdAt` too — a compound index serves both in one
+// pass instead of scanning the `assignedTo` matches and sorting in memory.
+leadSchema.index({ assignedTo: 1, createdAt: -1 });
 
 leadSchema.pre("save", function trackStatus(next) {
   if (this.isNew) {

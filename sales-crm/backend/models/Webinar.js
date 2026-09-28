@@ -19,7 +19,9 @@ const webinarSchema = new mongoose.Schema(
   {
     title: { type: String, required: true, trim: true, maxlength: 300 },
     description: { type: String, trim: true, maxlength: 5000 },
-    scheduledAt: { type: Date, required: true },
+    // Indexed — the Calling Report and dashboard both filter webinars by a
+    // scheduledAt date range on every load.
+    scheduledAt: { type: Date, required: true, index: true },
     host: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     status: { type: String, enum: WEBINAR_STATUSES, default: "upcoming" },
     registrations: [registrationSchema],

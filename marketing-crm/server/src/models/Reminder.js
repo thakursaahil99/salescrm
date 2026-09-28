@@ -16,4 +16,7 @@ const reminderSchema = new mongoose.Schema(
 reminderSchema.index({ status: 1, dateTime: 1 });
 reminderSchema.index({ createdBy: 1, status: 1 });
 
-export default mongoose.model("Reminder", reminderSchema);
+// Collection explicitly named "marketing_reminders" — this app's DB now
+// shares a single "crm" database with the Sales CRM, which has its own
+// unrelated "reminders" collection.
+export default mongoose.model("Reminder", reminderSchema, "marketing_reminders");

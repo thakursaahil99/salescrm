@@ -1,5 +1,5 @@
 import express from "express";
-import rateLimit from "express-rate-limit";
+import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import { chat } from "../controllers/assistantController.js";
 import { protect } from "../middleware/authMiddleware.js";
 
@@ -13,7 +13,11 @@ const chatLimiter = rateLimit({
   max: 20,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => String(req.user?._id || req.ip),
+  // Per logged-in user when we have one (always, behind `protect`); the IP
+  // fallback goes through ipKeyGenerator so it normalizes IPv6 addresses
+  // correctly instead of letting different addresses in the same /64 dodge
+  // the limit.
+  keyGenerator: (req) => (req.user?._id ? String(req.user._id) : ipKeyGenerator(req.ip)),
   message: { message: "Too many questions in a short time — wait a few minutes and try again." },
 });
 

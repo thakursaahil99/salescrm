@@ -21,7 +21,9 @@ const eventSchema = new mongoose.Schema(
     description: { type: String, trim: true, maxlength: 5000 },
     venue: { type: String, trim: true, maxlength: 300 },
     city: { type: String, trim: true, maxlength: 120 },
-    date: { type: Date, required: true },
+    // Indexed — the Calling Report and dashboard both filter events by a
+    // date range on every load.
+    date: { type: Date, required: true, index: true },
     host: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     status: { type: String, enum: EVENT_STATUSES, default: "upcoming" },
     invitees: [inviteeSchema],

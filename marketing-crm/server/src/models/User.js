@@ -17,4 +17,7 @@ userSchema.methods.emails = function () {
   return [this.email, this.email2].filter(Boolean);
 };
 
-export default mongoose.model("User", userSchema);
+// Collection explicitly named "marketing_users" — this app's DB now shares
+// a single "crm" database with the Sales CRM, whose own "users" collection
+// has an unrelated schema, so the two are kept in separate collections.
+export default mongoose.model("User", userSchema, "marketing_users");

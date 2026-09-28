@@ -21,7 +21,12 @@ router.post(
     if (!errors.isEmpty()) return res.status(400).json({ ok: false, msg: "Username and password are required." });
 
     const { username, password } = req.body;
-    const user = await User.findOne({ username: username.trim() });
+    // Case-insensitive so the same typed case works here and on the Sales
+    // CRM (whose login already lowercases before matching) — needed for the
+    // Admin CRM shell's single login, which tries the identical identifier
+    // against both.
+    const escaped = username.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const user = await User.findOne({ username: { $regex: `^${escaped}$`, $options: "i" } });
     if (!user) return res.status(401).json({ ok: false, msg: "Invalid username or password." });
 
     const match = await bcrypt.compare(password, user.passwordHash);
