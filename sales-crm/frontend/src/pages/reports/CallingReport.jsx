@@ -41,18 +41,36 @@ const flatten = (data) => {
   return { columns: headers.map((k) => ({ key: k, header: k })), rows };
 };
 
+// Local YYYY-MM-DD (matches what a date <input> stores) — not toISOString(),
+// which is UTC and can land on the wrong calendar day.
+const toISODate = (d) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+// 1st of the current month through the last day of the month after next —
+// e.g. an event booked for next month (common when testing ahead of time)
+// shows up without having to go find and apply a range by hand first.
+const defaultRange = () => {
+  const now = new Date();
+  const from = new Date(now.getFullYear(), now.getMonth(), 1);
+  const to = new Date(now.getFullYear(), now.getMonth() + 3, 0);
+  return { from: toISODate(from), to: toISODate(to) };
+};
+
 export default function CallingReport() {
   const toast = useToast();
   const now = new Date();
   const [period, setPeriod] = useState({ month: now.getMonth() + 1, year: now.getFullYear() });
   const [week, setWeek] = useState(0); // All Weeks by default
 
-  // A custom [from, to] someone picked instead of a month — takes over the whole report
-  // (no week breakdown; see buildCallingReport). `draft*` is what's in the two date inputs
-  // before "Apply"; `range` is the one actually driving the fetch.
-  const [range, setRange] = useState(null);
-  const [draftFrom, setDraftFrom] = useState("");
-  const [draftTo, setDraftTo] = useState("");
+  // A custom [from, to] — drives the whole report when set (no week breakdown;
+  // see buildCallingReport). Defaults to present month + next 2 months so
+  // upcoming Zoom meetings/events booked ahead of time are visible without a
+  // manual filter change; clearing it falls back to the Month/Week pickers.
+  // `draft*` is what's in the two date inputs before "Apply"; `range` is the
+  // one actually driving the fetch.
+  const [range, setRange] = useState(() => defaultRange());
+  const [draftFrom, setDraftFrom] = useState(() => defaultRange().from);
+  const [draftTo, setDraftTo] = useState(() => defaultRange().to);
 
   // Jumping to a different month: back to "All Weeks" instead of leaving a
   // stale week selected from whatever month was open before.
