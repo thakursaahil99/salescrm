@@ -73,17 +73,17 @@ export default function LeadsBoard() {
       location.state?.from === "dashboard" ||
       [...DRILL_KEYS, "status"].some((k) => searchParams.get(k))
   );
-  // Kanban's drag-and-drop is native HTML5 DnD, which touchscreens (iOS
-  // Safari, Android Chrome) never fire drag events for — a coarse-pointer
-  // visitor with no saved preference yet lands on Table instead, where
-  // LeadStageSelect's tap-friendly dropdown moves a lead through stages
-  // exactly like a drag would. Kanban is still one click away via the
-  // toggle for anyone who wants to browse it.
+  // Table by default everywhere — Kanban's drag-and-drop is native HTML5
+  // DnD, which touchscreens (iOS Safari, Android Chrome) never fire drag
+  // events for, and LeadStageSelect's tap dropdown (Table view) moves a
+  // lead through stages the same way a drag would, without that gap. Board
+  // is still one click away via the toggle for anyone who wants it — that
+  // choice is remembered from then on.
+  // _v2: anyone with "kanban" already saved under the old key gets the new
+  // Table default too, instead of staying stuck on their old one.
   const [view, setView] = useState(() => {
     if (cameFromDrilldown) return "table";
-    const saved = localStorage.getItem("rbh_leads_view");
-    if (saved) return saved;
-    return window.matchMedia?.("(pointer: coarse)").matches ? "table" : "kanban";
+    return localStorage.getItem("rbh_leads_view_v2") || "table";
   });
   // Defaults to "All time" — a bulk import or an old lead with a backdated
   // "Created on" would otherwise silently sit outside "This month" and look
@@ -164,7 +164,7 @@ export default function LeadsBoard() {
     return () => window.removeEventListener("crm:sync", onSync);
   }, [load]);
 
-  useEffect(() => localStorage.setItem("rbh_leads_view", view), [view]);
+  useEffect(() => localStorage.setItem("rbh_leads_view_v2", view), [view]);
   useEffect(() => localStorage.setItem("rbh_leads_period_v2", period), [period]);
 
   // Keep the URL in step with the active filters — shareable, back-button safe.
