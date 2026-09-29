@@ -107,13 +107,25 @@ router.get(
 
 router.get("/stages", (req, res) => res.json({ ok: true, data: STAGES }));
 
+// "Contact Person" and "Contact No." sit right next to each other in the
+// lead form — an easy mix-up types the phone number into the name field
+// (nothing else validates its shape). Flagged only when what's left after
+// stripping spaces/dashes/parens/plus is 7+ digits and nothing else — long
+// enough that no real name collides with it. Mirrors the same check the
+// frontend runs (marketing-lib/validators.js); kept here too since this
+// endpoint doesn't only ever hear from that form.
+const notAPhoneNumber = body("contactPerson")
+  .optional({ checkFalsy: true })
+  .custom((v) => !/^\d{7,}$/.test(String(v).replace(/[\s\-()+]/g, "")))
+  .withMessage("Contact Person looks like a phone number — did you mean Contact No. instead?");
+
 // ── ADD LEAD ──
 router.post(
   "/",
-  [body("siteName").trim().notEmpty(), body("clientType").trim().notEmpty()],
+  [body("siteName").trim().notEmpty(), body("clientType").trim().notEmpty(), notAPhoneNumber],
   asyncHandler(async (req, res) => {
     const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(400).json({ ok: false, msg: "Site name and client type are required." });
+    if (!errors.isEmpty()) return res.status(400).json({ ok: false, msg: errors.array()[0].msg });
 
     if (req.user.role === "sales") {
       const me = await User.findById(req.user.id);
@@ -201,7 +213,11 @@ router.patch(
 // ── FULL EDIT (all fields; admin can reassign leadHead) ──
 router.put(
   "/:id",
+  [notAPhoneNumber],
   asyncHandler(async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ ok: false, msg: errors.array()[0].msg });
+
     const lead = await Lead.findById(req.params.id);
     if (!lead) return res.status(404).json({ ok: false, msg: "Lead not found." });
     if (!canAccessLead(lead, req.user)) return res.status(403).json({ ok: false, msg: "Access denied. Not your lead." });

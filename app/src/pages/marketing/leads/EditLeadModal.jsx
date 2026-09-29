@@ -3,6 +3,7 @@ import Modal from "../../../marketing-lib/Modal.jsx";
 import api from "../../../services/marketingApi.js";
 import { useToast } from "../../../marketing-lib/useToast.js";
 import { CLIENT_TYPES, CATALOGUE_STATUS, COMM_MODES, STAGES } from "../../../marketing-lib/constants.js";
+import { looksLikePhoneNumber } from "../../../marketing-lib/validators.js";
 
 export default function EditLeadModal({ open, lead, onClose, onSaved, salespersons, isAdmin }) {
   const [form, setForm] = useState(null);
@@ -34,6 +35,10 @@ export default function EditLeadModal({ open, lead, onClose, onSaved, salesperso
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!form.siteName.trim()) return push("Site name is required.", "error");
+    if (looksLikePhoneNumber(form.contactPerson)) {
+      return push("Contact Person looks like a phone number — did you mean to put that in Contact No. instead?", "error");
+    }
     setSaving(true);
     try {
       await api.put(`/leads/${lead._id}`, { ...form, newRemark: newRemark || undefined });
