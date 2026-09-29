@@ -36,6 +36,7 @@ const FunnelReport = lazy(() => import("./pages/reports/FunnelReport.jsx"));
 const Receivables = lazy(() => import("./pages/reports/Receivables.jsx"));
 const PaymentDelays = lazy(() => import("./pages/reports/PaymentDelays.jsx"));
 const Leaderboard = lazy(() => import("./pages/leaderboard/Leaderboard.jsx"));
+const ReviewPage = lazy(() => import("./pages/audit/ReviewPage.jsx"));
 
 function PageFallback() {
   return (
@@ -102,6 +103,7 @@ export default function App() {
               <Route path="/reports/funnel" element={<FunnelReport />} />
               <Route path="/reports/receivables" element={<Receivables />} />
               <Route path="/reports/payment-delays" element={<PaymentDelays />} />
+              <Route path="/review" element={<ReviewPage />} />
             </Route>
           </Route>
         </Route>

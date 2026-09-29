@@ -174,6 +174,19 @@ export default function LeadsBoard() {
   const clearDrill = () =>
     setFilters((f) => ({ ...f, from: "", to: "", open: "", followup: "", assignedTo: "" }));
 
+  // A bulk import's "Created on" column deliberately backdates leads to their
+  // real historical date (that's the whole point — migrated data keeps its
+  // real age). But the board defaults to "This month", so an import full of
+  // older dates would finish successfully and then look like it silently
+  // lost leads. Reset to "All time" (and clear any stage/source/search
+  // filter — imports always land as stage "new", source "other") so
+  // everything just imported is actually visible right after.
+  const handleImportSaved = () => {
+    setPeriod("all");
+    setFilters(emptyFilters);
+    setPage(1);
+  };
+
   const drillActive = DRILL_KEYS.some((k) => filters[k]);
   const drillLabel = [
     filters.from || filters.to
@@ -563,7 +576,7 @@ export default function LeadsBoard() {
       )}
 
       <LeadFormModal open={formOpen} onClose={() => setFormOpen(false)} onSaved={load} />
-      <ImportLeadsModal open={importOpen} onClose={() => setImportOpen(false)} onSaved={load} />
+      <ImportLeadsModal open={importOpen} onClose={() => setImportOpen(false)} onSaved={handleImportSaved} />
       <IfoFormModal
         open={!!convertLead}
         onClose={() => setConvertLead(null)}

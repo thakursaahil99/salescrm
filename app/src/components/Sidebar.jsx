@@ -19,6 +19,7 @@ import {
   MdOutlineChecklistRtl,
   MdOutlineEventAvailable,
   MdOutlineGroup,
+  MdOutlineFactCheck,
   MdClose,
 } from "react-icons/md";
 import { useAuth } from "../context/AuthContext.jsx";
@@ -78,6 +79,7 @@ const SECTIONS = [
     items: [
       { to: "/targets", label: "Targets", icon: MdOutlineTrackChanges },
       { to: "/sales-team", label: "Sales Team", icon: MdOutlinePeopleAlt },
+      { to: "/review", label: "Review", icon: MdOutlineFactCheck },
     ],
   },
   {
