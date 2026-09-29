@@ -51,7 +51,9 @@ export default function Receivables() {
     () => getReceivables({ type: type || undefined, salesperson: salespersonId || undefined }),
     [type, salespersonId]
   );
-  const { data, loading, error, refreshedAt, reload } = useLiveData(fetch, [type, salespersonId]);
+  const { data, loading, error, refreshedAt, reload } = useLiveData(fetch, [type, salespersonId], {
+    topics: ["conversions"],
+  });
 
   const s = data?.summary || {};
 

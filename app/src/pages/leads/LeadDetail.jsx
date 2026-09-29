@@ -35,13 +35,6 @@ import { useAuth } from "../../context/AuthContext.jsx";
 import { useLiveData } from "../../hooks/useLiveData.js";
 import { ROLES } from "../../utils/roles.js";
 import { LEAD_STATUS, LEAD_STATUS_ORDER, LEAD_SOURCE, moveBlocked } from "../../utils/constants.js";
-
-// "Converted" is deliberately left out of the quick Move-stage buttons below —
-// it's a financial event (deal value, payment), not just a label, and only
-// "Record conversion" (which asks for that money) is allowed to set it. A
-// click here used to be able to mark a lead Converted with no deal behind it
-// at all, silently vanishing from every revenue report.
-const MOVE_STAGE_OPTIONS = LEAD_STATUS_ORDER.filter((s) => s !== "converted");
 import { fmtDateTime, fmtDateTimeFull, fmtDate, fromNow, inr, initials, pct, byNearestFirst } from "../../utils/format.js";
 import {
   getLead,
@@ -51,6 +44,15 @@ import {
   deleteLead,
 } from "../../services/leadService.js";
 import { listReminders, deleteReminder } from "../../services/reminderService.js";
+
+// "Converted" IS one of the quick Move-stage buttons below, same as every
+// other stage — but it's a financial event (deal value, payment), not just a
+// label, so pickStatus()/submitStatus() special-case it to open the
+// record-conversion form (IfoFormModal) instead of the plain stage-update
+// flow. The backend rejects a raw status="converted" write on this endpoint
+// too, so a lead can never end up marked Converted with no deal behind it —
+// silently invisible to every revenue report — regardless of which UI path
+// is used to reach it.
 import { listEvents, addInvitees } from "../../services/eventService.js";
 import { listWebinars, addRegistrations } from "../../services/webinarService.js";
 
@@ -99,7 +101,8 @@ export default function LeadDetail() {
         // A reminders hiccup shouldn't blank the whole lead page.
         listReminders({ lead: id }).catch(() => ({ items: [] })),
       ]).then(([leadRes, rem]) => ({ ...leadRes, reminders: rem.items || [] })),
-    [id]
+    [id],
+    { topics: ["leads", "reminders", "conversions", "calls"] }
   );
 
   // Bounce back to the list only if the very first load fails (lead gone / no access);
@@ -422,7 +425,7 @@ export default function LeadDetail() {
         <Card padding="p-4">
           <h3 className="font-bold text-gray-900 mb-3">Move stage</h3>
             <div className="flex flex-wrap gap-2 mb-3">
-              {MOVE_STAGE_OPTIONS.map((s) => {
+              {LEAD_STATUS_ORDER.map((s) => {
                 const blocked = moveBlocked(lead.status, s, lead.statusHistory);
                 const selected = nextStatus === s;
                 return (
@@ -444,7 +447,7 @@ export default function LeadDetail() {
                 );
               })}
             </div>
-            {MOVE_STAGE_OPTIONS.some((s) => moveBlocked(lead.status, s, lead.statusHistory)) && (
+            {LEAD_STATUS_ORDER.some((s) => moveBlocked(lead.status, s, lead.statusHistory)) && (
               <p className="mb-3 text-xs font-semibold text-amber-700">
                 {lead.status === "followup"
                   ? "Leads move forward only — resume this one at the stage it reached, or move it on."

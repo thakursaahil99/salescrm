@@ -117,8 +117,8 @@ export default function LeadsBoard() {
     return p;
   }, [filters, period]);
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       if (view === "kanban") {
         const { columns } = await getKanban(cleanParams());
@@ -127,14 +127,28 @@ export default function LeadsBoard() {
         setTable(await listLeads({ ...cleanParams(), page, limit: 20 }));
       }
     } catch (err) {
-      toast.error(err);
+      if (!silent) toast.error(err);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [view, page, cleanParams, toast]);
 
   useEffect(() => {
     load();
+  }, [load]);
+
+  // Real-time: another salesperson's move, a new lead, or a conversion shows
+  // up here without a manual refresh. Silent — no spinner flash, matches the
+  // background-refresh pattern the report pages already use. Note this does
+  // reset any deep column pagination the viewer had scrolled into, same
+  // trade-off the periodic report refreshes already make.
+  useEffect(() => {
+    const onSync = (e) => {
+      const changed = e.detail?.topics || [];
+      if (changed.some((t) => ["leads", "conversions"].includes(t))) load(true);
+    };
+    window.addEventListener("crm:sync", onSync);
+    return () => window.removeEventListener("crm:sync", onSync);
   }, [load]);
 
   useEffect(() => localStorage.setItem("rbh_leads_view", view), [view]);

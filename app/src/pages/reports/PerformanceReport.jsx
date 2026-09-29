@@ -54,7 +54,9 @@ export default function PerformanceReport() {
   // whenever the tab regains focus — the sales head watches it update as the
   // team enters data, no page reload.
   const fetchReport = useCallback(() => getFiveForThree(period), [period]);
-  const { data, loading, error, refreshedAt, reload } = useLiveData(fetchReport, [period.month, period.year]);
+  const { data, loading, error, refreshedAt, reload } = useLiveData(fetchReport, [period.month, period.year], {
+    topics: ["leads", "conversions"],
+  });
 
   const periodLabel = `${MONTHS[period.month - 1]} ${period.year}`;
   const fileBase = `RBH-5for3-${period.year}-${String(period.month).padStart(2, "0")}`;

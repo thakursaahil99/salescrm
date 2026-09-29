@@ -42,6 +42,18 @@ export default function SalesDashboard() {
     load();
   }, [load]);
 
+  // Real-time: a lead/call/conversion update anywhere refreshes this person's
+  // numbers without a manual reload. `load()` only calls setData on success,
+  // so an in-flight refetch never blanks the screen — no silent flag needed.
+  useEffect(() => {
+    const onSync = (e) => {
+      const changed = e.detail?.topics || [];
+      if (changed.some((t) => ["leads", "conversions", "calls", "reminders"].includes(t))) load();
+    };
+    window.addEventListener("crm:sync", onSync);
+    return () => window.removeEventListener("crm:sync", onSync);
+  }, [load]);
+
   const stage = useStageChange(load);
 
   if (!data) return <Spinner />;

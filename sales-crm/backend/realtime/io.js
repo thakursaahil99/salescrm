@@ -14,13 +14,16 @@ let io = null;
 const ROOM_STAFF = "staff"; // admins + managers
 const roomUser = (id) => `user:${String(id)}`;
 
-export async function initRealtime(httpServer, clientOrigins) {
+export async function initRealtime(httpServer, clientOrigins, path = "/socket.io/") {
   const { Server } = await import("socket.io");
   io = new Server(httpServer, {
     cors: { origin: clientOrigins, credentials: true },
     // Modest limits — this is a small internal team.
     pingInterval: 25000,
     pingTimeout: 20000,
+    // Distinct from the Marketing CRM's own socket.io path when both run on
+    // the combined server's one HTTP server.
+    path,
   });
 
   io.use((socket, next) => {

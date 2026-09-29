@@ -36,7 +36,9 @@ export default function PaymentDelays() {
     () => getPaymentDelays({ salesperson: salespersonId || undefined }),
     [salespersonId]
   );
-  const { data, loading, error, refreshedAt, reload } = useLiveData(fetch, [salespersonId]);
+  const { data, loading, error, refreshedAt, reload } = useLiveData(fetch, [salespersonId], {
+    topics: ["conversions"],
+  });
   const s = data?.summary || {};
 
   const exportCols = ["Outlet", "Client", "Owner", "Amount", "Due", "Settled", "Days delayed", "Status"].map(

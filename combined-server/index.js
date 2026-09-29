@@ -12,6 +12,7 @@ import salesApp from "../sales-crm/backend/app.js";
 import { connectDB as connectSalesDB, stopMemoryServer } from "../sales-crm/backend/config/db.js";
 import { assertConfig as assertSalesConfig } from "../sales-crm/backend/config/assertConfig.js";
 import { seedBase } from "../sales-crm/backend/seed/seedBase.js";
+import { initRealtime, startReminderTicker } from "../sales-crm/backend/realtime/io.js";
 
 // One process, one Render service, both CRMs. Each app is mounted whole
 // under its own path prefix — /marketing and /sales — so their identically
@@ -42,8 +43,13 @@ root.use("/sales", salesApp);
 root.get("/", (req, res) => res.json({ ok: true, service: "admin-crm-combined-server" }));
 
 const server = http.createServer(root);
-initSocket(server); // Marketing CRM's reminder job pushes live updates over this
+// Distinct socket.io paths — two Server() instances on the same default
+// path would otherwise fight over the same upgrade route.
+initSocket(server, "/marketing/socket.io/"); // Marketing CRM's reminder job pushes live updates over this
+const clientOrigins = (process.env.CLIENT_URL || "").split(",").map((s) => s.trim()).filter(Boolean);
+await initRealtime(server, clientOrigins, "/sales/socket.io/");
 startReminderJob();
+startReminderTicker();
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => console.log(`[Server] Combined Admin CRM API listening on port ${PORT}`));

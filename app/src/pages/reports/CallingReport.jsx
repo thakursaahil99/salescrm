@@ -92,12 +92,11 @@ export default function CallingReport() {
   // Live: same refresh model as the Sales Report — auto-updates every 20s and
   // on tab focus, no reload.
   const fetchReport = useCallback(() => getCallingReport(range || period), [range, period]);
-  const { data, loading, error, refreshedAt, reload } = useLiveData(fetchReport, [
-    range?.from,
-    range?.to,
-    period.month,
-    period.year,
-  ]);
+  const { data, loading, error, refreshedAt, reload } = useLiveData(
+    fetchReport,
+    [range?.from, range?.to, period.month, period.year],
+    { topics: ["leads", "calls", "conversions"] }
+  );
 
   const periodLabel = range ? `${fmtDate(range.from)} – ${fmtDate(range.to)}` : `${MONTHS[period.month - 1]} ${period.year}`;
   const fileBase = range

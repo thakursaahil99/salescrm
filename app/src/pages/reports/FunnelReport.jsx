@@ -53,7 +53,9 @@ export default function FunnelReport() {
     () => getFunnelReport({ from: fromFor(rangeKey), salesperson: salespersonId || undefined }),
     [rangeKey, salespersonId]
   );
-  const { data, loading, error, refreshedAt, reload } = useLiveData(fetch, [rangeKey, salespersonId]);
+  const { data, loading, error, refreshedAt, reload } = useLiveData(fetch, [rangeKey, salespersonId], {
+    topics: ["leads", "conversions"],
+  });
 
   const rangeLabel = RANGES.find((r) => r.key === rangeKey)?.label;
 

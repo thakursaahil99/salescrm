@@ -1,6 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import api from "../services/api.js";
 import marketingApi from "../services/marketingApi.js";
+import { connectRealtime, disconnectRealtime } from "../realtime/socket.js";
+import { connectSocket, getSocket } from "../marketing-lib/socket.js";
 
 const AuthContext = createContext(null);
 
@@ -121,6 +123,22 @@ export function AuthProvider({ children }) {
     setUser(null);
     setMarketingUser(null);
   }, []);
+
+  // Connect (or reconnect with a fresh token) whenever the Sales side logs
+  // in; disconnect once it logs out. Marketing CRM's own socket.io stays on
+  // its separate connection (below), unaffected.
+  useEffect(() => {
+    if (user) connectRealtime(sessionStorage.getItem("rbh_token"));
+    else disconnectRealtime();
+  }, [user]);
+
+  // Same for the Marketing side — its socket.io identifies by username
+  // (server-side room join), not a JWT, since emitLeadEvent() broadcasts to
+  // everyone and only emitToUser() needs the per-user room.
+  useEffect(() => {
+    if (marketingUser?.username) connectSocket(marketingUser.username);
+    else getSocket().disconnect();
+  }, [marketingUser]);
 
   const value = {
     user, // sales user — unchanged shape existing Sales pages already expect

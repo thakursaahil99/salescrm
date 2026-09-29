@@ -53,7 +53,13 @@ export default function Listbox({
     if (!open) return;
     place();
     const onDoc = (e) => {
-      if (rootRef.current && !rootRef.current.contains(e.target)) setOpen(false);
+      // The open panel is portaled to <body>, so it's never a DOM descendant
+      // of rootRef — checking only rootRef.contains() made every click
+      // INSIDE the panel register as "outside" and close it on mousedown,
+      // before the option's own click could ever fire.
+      const inTrigger = rootRef.current?.contains(e.target);
+      const inPanel = e.target?.closest?.('[data-listbox-panel="true"]');
+      if (!inTrigger && !inPanel) setOpen(false);
     };
     // Capture phase: another Listbox's own trigger calls stopPropagation() on
     // its mousedown (so it doesn't also fire a table row's onClick) — a

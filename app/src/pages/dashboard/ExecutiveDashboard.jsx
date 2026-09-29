@@ -77,20 +77,31 @@ export default function ExecutiveDashboard({ title, subtitle }) {
       .catch(() => {});
   }, []);
 
-  const loadCore = useCallback(() => {
-    setCore(null);
+  const loadCore = useCallback((silent = false) => {
+    if (!silent) setCore(null);
     const params = { ...period, salesperson: salespersonId || undefined };
     Promise.all([getSummary(params), getFunnel(params)])
       .then(([summary, funnel]) => setCore({ summary, funnel }))
-      .catch((err) => toast.error(err));
-    setInsights(null);
+      .catch((err) => { if (!silent) toast.error(err); });
+    if (!silent) setInsights(null);
     getInsights(params)
       .then(setInsights)
-      .catch((err) => toast.error(err));
+      .catch((err) => { if (!silent) toast.error(err); });
   }, [period, salespersonId, toast]);
 
   useEffect(() => {
     loadCore();
+  }, [loadCore]);
+
+  // Real-time: a lead or conversion change anywhere refreshes the KPIs here
+  // without a manual reload — silent, so the numbers just update in place.
+  useEffect(() => {
+    const onSync = (e) => {
+      const changed = e.detail?.topics || [];
+      if (changed.some((t) => ["leads", "conversions", "calls"].includes(t))) loadCore(true);
+    };
+    window.addEventListener("crm:sync", onSync);
+    return () => window.removeEventListener("crm:sync", onSync);
   }, [loadCore]);
 
   // The "Top" board is a company/team-wide ranking; slicing to one person

@@ -11,7 +11,11 @@ let socket = null;
 
 export function getSocket() {
   if (!socket) {
-    socket = io(SOCKET_ORIGIN, { autoConnect: false });
+    // Must match the path initSocket() is given in combined-server/index.js —
+    // Sales CRM's own socket.io instance shares this HTTP server on a
+    // different path (/sales/socket.io/), so the default "/socket.io/"
+    // would otherwise hit the wrong (or no) server.
+    socket = io(SOCKET_ORIGIN, { path: "/marketing/socket.io/", autoConnect: false });
   }
   return socket;
 }
