@@ -46,7 +46,7 @@ export default function CallingReportTable({ data, week }) {
         <table className="w-full text-[15px] border-separate border-spacing-0">
           <thead>
             <tr className="text-xs uppercase tracking-wide text-white bg-slate-700">
-              <th className="px-3 py-3 text-left font-bold border-r border-slate-500">
+              <th className="px-3 py-3 text-left font-bold border-r border-slate-500 sticky left-0 z-[2] bg-slate-700">
                 Salesperson
               </th>
               <th className="px-3 py-3 text-right font-bold border-l border-slate-500 leading-tight">
@@ -73,15 +73,19 @@ export default function CallingReportTable({ data, week }) {
           </thead>
           <tbody>
             {selectedWeek.rows.map((r) => (
-              <tr key={r.salespersonId} className="border-b border-slate-200 hover:bg-slate-50">
-                <td className="px-3 py-2 whitespace-nowrap font-medium text-gray-700 border-r-2 border-slate-300 bg-white">
+              <tr key={r.salespersonId} className="group border-b border-slate-200 hover:bg-slate-50">
+                <td className="px-3 py-2 whitespace-nowrap font-medium text-gray-700 border-r-2 border-slate-300 bg-white sticky left-0 z-[1] group-hover:bg-slate-50">
                   {r.name}
                 </td>
                 {numCells(r)}
               </tr>
             ))}
             <tr className={future ? "bg-slate-50" : "bg-slate-100"}>
-              <td className="px-3 py-2.5 text-[13px] font-extrabold uppercase text-slate-600 border-r-2 border-slate-300 border-t border-slate-200">
+              <td
+                className={`px-3 py-2.5 text-[13px] font-extrabold uppercase text-slate-600 border-r-2 border-slate-300 border-t border-slate-200 sticky left-0 z-[1] ${
+                  future ? "bg-slate-50" : "bg-slate-100"
+                }`}
+              >
                 Total
               </td>
               {numCells(selectedWeek.total, true)}

@@ -124,8 +124,8 @@ export default function ReviewPage() {
       header: "Type",
       render: (r) => typesByCode[r.conversionType]?.label || r.conversionType,
     },
-    { key: "closedBy", header: "Closed by", render: (r) => r.convertedBy?.name || "—" },
-    { key: "conversionDate", header: "Date", render: (r) => fmtDateTime(r.conversionDate) },
+    { key: "closedBy", header: "Closed by", hideOnMobile: true, render: (r) => r.convertedBy?.name || "—" },
+    { key: "conversionDate", header: "Date", hideOnMobile: true, render: (r) => fmtDateTime(r.conversionDate) },
     {
       key: "deal",
       header: "Deal value",

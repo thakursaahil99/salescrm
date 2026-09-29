@@ -73,9 +73,18 @@ export default function LeadsBoard() {
       location.state?.from === "dashboard" ||
       [...DRILL_KEYS, "status"].some((k) => searchParams.get(k))
   );
-  const [view, setView] = useState(
-    cameFromDrilldown ? "table" : localStorage.getItem("rbh_leads_view") || "kanban"
-  );
+  // Kanban's drag-and-drop is native HTML5 DnD, which touchscreens (iOS
+  // Safari, Android Chrome) never fire drag events for — a coarse-pointer
+  // visitor with no saved preference yet lands on Table instead, where
+  // LeadStageSelect's tap-friendly dropdown moves a lead through stages
+  // exactly like a drag would. Kanban is still one click away via the
+  // toggle for anyone who wants to browse it.
+  const [view, setView] = useState(() => {
+    if (cameFromDrilldown) return "table";
+    const saved = localStorage.getItem("rbh_leads_view");
+    if (saved) return saved;
+    return window.matchMedia?.("(pointer: coarse)").matches ? "table" : "kanban";
+  });
   // Defaults to "All time" — a bulk import or an old lead with a backdated
   // "Created on" would otherwise silently sit outside "This month" and look
   // deleted/missing (see handleImportSaved below for the same reasoning).
@@ -354,9 +363,9 @@ export default function LeadsBoard() {
       header: "Stage",
       render: (l) => <LeadStageSelect lead={l} onPick={onPickStage} />,
     },
-    { key: "source", header: "Source", render: (l) => LEAD_SOURCE[l.source]?.label || l.source },
-    { key: "city", header: "City", render: (l) => l.city || "—" },
-    { key: "assignedTo", header: "Owner", render: (l) => l.assignedTo?.name || "—" },
+    { key: "source", header: "Source", hideOnMobile: true, render: (l) => LEAD_SOURCE[l.source]?.label || l.source },
+    { key: "city", header: "City", hideOnMobile: true, render: (l) => l.city || "—" },
+    { key: "assignedTo", header: "Owner", hideOnMobile: true, render: (l) => l.assignedTo?.name || "—" },
     {
       key: "potentialValue",
       header: "Value",
@@ -385,7 +394,7 @@ export default function LeadsBoard() {
         );
       },
     },
-    { key: "createdAt", header: "Added", render: (l) => fmtDate(l.createdAt) },
+    { key: "createdAt", header: "Added", hideOnMobile: true, render: (l) => fmtDate(l.createdAt) },
   ];
 
   const exportCols = [

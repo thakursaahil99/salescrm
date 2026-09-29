@@ -87,9 +87,9 @@ export default function IfoList() {
       header: "Type",
       render: (r) => <Badge color={typesByCode[r.conversionType]?.color}>{typesByCode[r.conversionType]?.label || r.conversionType}</Badge>,
     },
-    { key: "outletCity", header: "City", render: (r) => r.outletCity || "—" },
-    { key: "convertedBy", header: "Closed by", render: (r) => r.convertedBy?.name || "—" },
-    { key: "conversionDate", header: "Date", render: (r) => fmtDate(r.conversionDate) },
+    { key: "outletCity", header: "City", hideOnMobile: true, render: (r) => r.outletCity || "—" },
+    { key: "convertedBy", header: "Closed by", hideOnMobile: true, render: (r) => r.convertedBy?.name || "—" },
+    { key: "conversionDate", header: "Date", hideOnMobile: true, render: (r) => fmtDate(r.conversionDate) },
     {
       key: "payment",
       header: "Received / Deal",
