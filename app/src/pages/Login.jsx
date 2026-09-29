@@ -37,7 +37,6 @@ export default function Login() {
         <Logo size={88} />
         <p className="text-xs text-gray-400 tracking-[0.2em] uppercase mt-3">Admin CRM</p>
         <h1 className="text-lg font-bold text-gray-900 tracking-tight mt-4">Welcome back</h1>
-        <p className="text-sm text-gray-500 mt-1">Sign in with your Marketing or Sales CRM login.</p>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
