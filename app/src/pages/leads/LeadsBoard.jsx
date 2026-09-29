@@ -76,9 +76,13 @@ export default function LeadsBoard() {
   const [view, setView] = useState(
     cameFromDrilldown ? "table" : localStorage.getItem("rbh_leads_view") || "kanban"
   );
-  // Working lists default to the current month so imported historical leads
-  // don't bury this month's work. Ignored while a dashboard drill-down is active.
-  const [period, setPeriod] = useState(() => localStorage.getItem("rbh_leads_period") || "month");
+  // Defaults to "All time" — a bulk import or an old lead with a backdated
+  // "Created on" would otherwise silently sit outside "This month" and look
+  // deleted/missing (see handleImportSaved below for the same reasoning).
+  // Ignored while a dashboard drill-down is active.
+  // _v2: anyone with the old "This month" default already cached under the
+  // v1 key gets the new default too, instead of being stuck on their old one.
+  const [period, setPeriod] = useState(() => localStorage.getItem("rbh_leads_period_v2") || "all");
   const [page, setPage] = useState(1);
   const [formOpen, setFormOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
@@ -152,7 +156,7 @@ export default function LeadsBoard() {
   }, [load]);
 
   useEffect(() => localStorage.setItem("rbh_leads_view", view), [view]);
-  useEffect(() => localStorage.setItem("rbh_leads_period", period), [period]);
+  useEffect(() => localStorage.setItem("rbh_leads_period_v2", period), [period]);
 
   // Keep the URL in step with the active filters — shareable, back-button safe.
   // Only write when something actually changed, to avoid a setSearchParams loop.
