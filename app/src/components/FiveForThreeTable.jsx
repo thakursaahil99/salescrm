@@ -81,7 +81,32 @@ export default function FiveForThreeTable({ data }) {
   const toggle = (w) => setOpen((o) => ({ ...o, [w]: !isOpen(w) }));
 
   return (
-    <div className="overflow-x-auto">
+    <div>
+      {/* Mobile: 14 data columns (7 metrics × Plan/Actual) plus the week
+          tree is unworkable as a side-scrolled table on a phone — same
+          week-accordion structure, but each row becomes a card with every
+          metric's Plan → Actual stacked. Desktop/admin keeps the original
+          spreadsheet-style table untouched below, at sm and up. */}
+      <div className="sm:hidden space-y-3">
+        {data.weeks.map((wk) => (
+          <WeekCards
+            key={wk.week}
+            section={wk}
+            open={isOpen(wk.week)}
+            onToggle={() => toggle(wk.week)}
+            future={wk.week > curWeek}
+          />
+        ))}
+        <WeekCards
+          section={data.monthTotal}
+          open={isOpen("m")}
+          onToggle={() => setOpen((o) => ({ ...o, m: !(o.m ?? false) }))}
+          highlight
+        />
+        <Legend />
+      </div>
+
+      <div className="hidden sm:block overflow-x-auto">
       <div className="min-w-[1180px] rounded-xl border-2 border-blue-500 overflow-hidden">
         <table className="w-full text-[15px] border-separate border-spacing-0">
           <thead>
@@ -147,17 +172,24 @@ export default function FiveForThreeTable({ data }) {
           </tbody>
         </table>
       </div>
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500 mt-3 px-1">
-        <span className="flex items-center gap-1">
-          <span className="h-2.5 w-2.5 rounded-sm bg-emerald-400" /> on / ahead of plan
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="h-2.5 w-2.5 rounded-sm bg-amber-400" /> 60–98%
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="h-2.5 w-2.5 rounded-sm bg-red-400" /> below 60%
-        </span>
+      <Legend />
       </div>
+    </div>
+  );
+}
+
+function Legend() {
+  return (
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500 mt-3 px-1">
+      <span className="flex items-center gap-1">
+        <span className="h-2.5 w-2.5 rounded-sm bg-emerald-400" /> on / ahead of plan
+      </span>
+      <span className="flex items-center gap-1">
+        <span className="h-2.5 w-2.5 rounded-sm bg-amber-400" /> 60–98%
+      </span>
+      <span className="flex items-center gap-1">
+        <span className="h-2.5 w-2.5 rounded-sm bg-red-400" /> below 60%
+      </span>
     </div>
   );
 }
@@ -198,5 +230,61 @@ function WeekBlock({ section, open, onToggle, highlight, future }) {
           </tr>
         ))}
     </>
+  );
+}
+
+// Mobile counterpart of `cells()` — one row per metric, "Plan → Actual"
+// instead of two table columns, same plan-vs-actual tint on the Actual side.
+function metricRows(row) {
+  return METRICS.map((m) => {
+    const c = row[m.key] || { pl: 0, act: 0 };
+    const rag = tint(c.act, c.pl);
+    return (
+      <div key={m.key} className="flex items-center justify-between gap-3 px-3 py-2">
+        <span className="min-w-0">
+          <span className="block truncate text-xs font-semibold text-blue-700">{m.label}</span>
+          {m.sub && <span className="block text-[10px] text-blue-400">{m.sub}</span>}
+        </span>
+        <span className="shrink-0 text-right text-sm tabular-nums">
+          <span className="text-blue-400">{c.pl == null ? "—" : m.fmt(c.pl)}</span>
+          <span className="mx-1 text-blue-300">→</span>
+          <span className={`font-bold px-1.5 py-0.5 rounded ${rag || "text-blue-900"}`}>{m.fmt(c.act)}</span>
+        </span>
+      </div>
+    );
+  });
+}
+
+// Mobile counterpart of `WeekBlock` — same week-accordion structure, each
+// row (Total, then every salesperson once expanded) rendered as a card of
+// stacked metric rows instead of 14 table columns.
+function WeekCards({ section, open, onToggle, highlight, future }) {
+  const { rows, total } = section;
+  return (
+    <div className="rounded-xl border-2 border-blue-400 overflow-hidden">
+      <button
+        type="button"
+        onClick={onToggle}
+        className={`w-full flex items-center gap-1 px-3 py-2.5 text-[13px] font-extrabold uppercase tracking-wide ${
+          highlight ? "bg-blue-200 text-blue-900" : future ? "bg-blue-50 text-blue-800" : "bg-blue-100 text-blue-800"
+        }`}
+      >
+        {open ? <MdExpandMore size={17} /> : <MdChevronRight size={17} />}
+        {section.label}
+      </button>
+      <div className="divide-y divide-blue-100 bg-white">
+        <div>
+          <p className="px-3 pt-2 text-[11px] font-bold uppercase text-blue-500">Total</p>
+          {metricRows(total)}
+        </div>
+        {open &&
+          rows.map((r) => (
+            <div key={r.salespersonId}>
+              <p className="px-3 pt-2 text-sm font-semibold text-gray-800 bg-sky-50/60">{r.name}</p>
+              {metricRows(r)}
+            </div>
+          ))}
+      </div>
+    </div>
   );
 }

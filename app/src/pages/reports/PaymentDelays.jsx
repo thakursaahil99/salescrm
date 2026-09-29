@@ -130,26 +130,26 @@ export default function PaymentDelays() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-left text-xs uppercase tracking-wide text-gray-400 border-b border-gray-100">
-                    <th className="py-2 px-3 font-medium">Salesperson</th>
+                    <th className="py-2 px-3 font-medium sticky left-0 z-[2] bg-white">Salesperson</th>
                     <th className="py-2 px-3 font-medium text-right">Delayed</th>
-                    <th className="py-2 px-3 font-medium text-right">Paid late</th>
-                    <th className="py-2 px-3 font-medium text-right">Unpaid</th>
+                    <th className="py-2 px-3 font-medium text-right hidden sm:table-cell">Paid late</th>
+                    <th className="py-2 px-3 font-medium text-right hidden sm:table-cell">Unpaid</th>
                     <th className="py-2 px-3 font-medium text-right">Avg</th>
-                    <th className="py-2 px-3 font-medium text-right">Worst</th>
+                    <th className="py-2 px-3 font-medium text-right hidden sm:table-cell">Worst</th>
                     <th className="py-2 px-3 font-medium text-right">Amount</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {data.bySalesperson.map((o) => (
                     <tr key={o.name}>
-                      <td className="py-2.5 px-3 text-gray-700">{o.name}</td>
+                      <td className="py-2.5 px-3 text-gray-700 sticky left-0 z-[1] bg-white">{o.name}</td>
                       <td className="py-2.5 px-3 text-right font-semibold text-gray-800">{o.count}</td>
-                      <td className="py-2.5 px-3 text-right text-gray-500">{o.paidLate}</td>
-                      <td className="py-2.5 px-3 text-right text-gray-500">{o.pending}</td>
+                      <td className="py-2.5 px-3 text-right text-gray-500 hidden sm:table-cell">{o.paidLate}</td>
+                      <td className="py-2.5 px-3 text-right text-gray-500 hidden sm:table-cell">{o.pending}</td>
                       <td className={`py-2.5 px-3 text-right ${o.avgDelayDays >= 15 ? "text-red-500 font-medium" : "text-gray-600"}`}>
                         {o.avgDelayDays}d
                       </td>
-                      <td className="py-2.5 px-3 text-right text-gray-500">{o.maxDelayDays}d</td>
+                      <td className="py-2.5 px-3 text-right text-gray-500 hidden sm:table-cell">{o.maxDelayDays}d</td>
                       <td className="py-2.5 px-3 text-right text-gray-600">{inrCompact(o.amount)}</td>
                     </tr>
                   ))}
@@ -164,8 +164,8 @@ export default function PaymentDelays() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-left text-xs uppercase tracking-wide text-gray-400 border-b border-gray-100">
-                    <th className="py-2.5 px-4 font-medium">Outlet / client</th>
-                    <th className="py-2.5 px-4 font-medium">Owner</th>
+                    <th className="py-2.5 px-4 font-medium sticky left-0 z-[2] bg-gray-50">Outlet / client</th>
+                    <th className="py-2.5 px-4 font-medium hidden sm:table-cell">Owner</th>
                     <th className="py-2.5 px-4 font-medium text-right">Amount</th>
                     <th className="py-2.5 px-4 font-medium text-right">Due</th>
                     <th className="py-2.5 px-4 font-medium text-right">Delay</th>
@@ -174,12 +174,12 @@ export default function PaymentDelays() {
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {data.items.map((r, i) => (
-                    <tr key={`${r.conversionId}-${i}`} className="hover:bg-gray-50">
-                      <td className="py-3 px-4">
+                    <tr key={`${r.conversionId}-${i}`} className="group hover:bg-gray-50">
+                      <td className="py-3 px-4 sticky left-0 z-[1] bg-white group-hover:bg-gray-50">
                         <span className="font-medium text-gray-800">{r.outlet}</span>
                         <p className="text-xs text-gray-400">{r.client}</p>
                       </td>
-                      <td className="py-3 px-4 text-gray-600">{r.owner}</td>
+                      <td className="py-3 px-4 text-gray-600 hidden sm:table-cell">{r.owner}</td>
                       <td className="py-3 px-4 text-right text-gray-700">{inr(r.amount)}</td>
                       <td className="py-3 px-4 text-right text-gray-500">
                         {fmtDate(r.dueDate)}

@@ -159,8 +159,8 @@ export default function Receivables() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="text-left text-xs uppercase tracking-wide text-gray-400 border-b border-gray-100">
-                      <th className="py-2.5 px-4 font-medium">Outlet / client</th>
-                      <th className="py-2.5 px-4 font-medium">Owner</th>
+                      <th className="py-2.5 px-4 font-medium sticky left-0 z-[2] bg-gray-50">Outlet / client</th>
+                      <th className="py-2.5 px-4 font-medium hidden sm:table-cell">Owner</th>
                       <th className="py-2.5 px-4 font-medium text-right">Outstanding</th>
                       <th className="py-2.5 px-4 font-medium text-right">Pending</th>
                       <th className="py-2.5 px-4 font-medium text-right">Actions</th>
@@ -170,8 +170,8 @@ export default function Receivables() {
                     {data.rows.map((r) => {
                       const pctPaid = r.dealValue ? Math.round((r.amountReceived / r.dealValue) * 100) : 0;
                       return (
-                        <tr key={r._id} className="hover:bg-gray-50">
-                          <td className="py-3 px-4">
+                        <tr key={r._id} className="group hover:bg-gray-50">
+                          <td className="py-3 px-4 sticky left-0 z-[1] bg-white group-hover:bg-gray-50">
                             <div className="flex items-center gap-2">
                               <span className="font-medium text-gray-800">{r.outletName}</span>
                               <Badge color={typesByCode[r.conversionType]?.color}>
@@ -180,7 +180,7 @@ export default function Receivables() {
                             </div>
                             <p className="text-xs text-gray-400">{r.lead?.name || "—"}</p>
                           </td>
-                          <td className="py-3 px-4 text-gray-600">{r.owner}</td>
+                          <td className="py-3 px-4 text-gray-600 hidden sm:table-cell">{r.owner}</td>
                           <td className="py-3 px-4 text-right">
                             <p className="font-semibold text-amber-700">{inr(r.outstanding)}</p>
                             <div className="h-1.5 bg-gray-100 rounded-full mt-1 overflow-hidden w-24 ml-auto">

@@ -229,12 +229,12 @@ export default function LeadsPage() {
               <th className="p-3 w-10">
                 <input type="checkbox" checked={selected.size === leads.length && leads.length > 0} onChange={toggleSelectAll} />
               </th>
-              <th className="p-3">Site / Client</th>
+              <th className="p-3 sticky left-0 z-[2] bg-white">Site / Client</th>
               <th className="p-3">Contact</th>
-              {isAdmin && <th className="p-3">Rep</th>}
+              {isAdmin && <th className="p-3 hidden sm:table-cell">Rep</th>}
               <th className="p-3">Stage</th>
-              <th className="p-3">Latest Remark</th>
-              <th className="p-3">Date</th>
+              <th className="p-3 hidden sm:table-cell">Latest Remark</th>
+              <th className="p-3 hidden sm:table-cell">Date</th>
               <th className="p-3 text-right">Actions</th>
             </tr>
           </thead>
@@ -253,11 +253,11 @@ export default function LeadsPage() {
               </tr>
             ) : (
               leads.map((lead) => (
-                <tr key={lead._id} className="border-b border-gray-50 hover:bg-gray-50/60">
+                <tr key={lead._id} className="group border-b border-gray-50 hover:bg-gray-50/60">
                   <td className="p-3">
                     <input type="checkbox" checked={selected.has(lead._id)} onChange={() => toggleSelect(lead._id)} />
                   </td>
-                  <td className="p-3">
+                  <td className="p-3 sticky left-0 z-[1] bg-white group-hover:bg-gray-50">
                     <p className="font-semibold text-gray-900">{lead.siteName}</p>
                     <ClientTypeBadge type={lead.clientType} />
                   </td>
@@ -265,14 +265,14 @@ export default function LeadsPage() {
                     <p className="text-gray-700">{lead.contactPerson}</p>
                     <p className="text-gray-400 text-xs">{lead.contactNo}</p>
                   </td>
-                  {isAdmin && <td className="p-3 text-gray-600">{lead.leadHead}</td>}
+                  {isAdmin && <td className="p-3 text-gray-600 hidden sm:table-cell">{lead.leadHead}</td>}
                   <td className="p-3">
                     <StageBadge stage={lead.stage} />
                   </td>
-                  <td className="p-3 max-w-[220px] truncate text-gray-500" title={lead.remarks}>
+                  <td className="p-3 max-w-[220px] truncate text-gray-500 hidden sm:table-cell" title={lead.remarks}>
                     {lead.remarks || "—"}
                   </td>
-                  <td className="p-3 text-gray-500 whitespace-nowrap">
+                  <td className="p-3 text-gray-500 whitespace-nowrap hidden sm:table-cell">
                     {lead.timestamp ? new Date(lead.timestamp).toLocaleDateString("en-IN") : "—"}
                   </td>
                   <td className="p-3">

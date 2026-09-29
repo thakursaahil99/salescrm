@@ -52,7 +52,7 @@ export default function UsersPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-100 text-left text-xs text-gray-500 uppercase">
-              <th className="p-3">Username</th>
+              <th className="p-3 sticky left-0 z-[2] bg-white">Username</th>
               <th className="p-3">Role</th>
               <th className="p-3">Email</th>
               <th className="p-3">Status</th>
@@ -68,8 +68,8 @@ export default function UsersPage() {
               </tr>
             ) : (
               users.map((u) => (
-                <tr key={u._id} className="border-b border-gray-50">
-                  <td className="p-3 font-semibold text-gray-800">{u.username}</td>
+                <tr key={u._id} className="group border-b border-gray-50">
+                  <td className="p-3 font-semibold text-gray-800 sticky left-0 z-[1] bg-white group-hover:bg-gray-50">{u.username}</td>
                   <td className="p-3 capitalize text-gray-600">{u.role}</td>
                   <td className="p-3 text-gray-500">{u.email || "—"}</td>
                   <td className="p-3">

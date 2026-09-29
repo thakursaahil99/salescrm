@@ -174,9 +174,9 @@ export default function FmsPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-100 text-left text-xs text-gray-500 uppercase">
-                      <th className="p-3">{cur.uidLabel}</th>
+                      <th className="p-3 sticky left-0 z-[2] bg-white">{cur.uidLabel}</th>
                       <th className="p-3">{cur.fields[0]?.label}{cur.fields[1] ? ` / ${cur.fields[1].label}` : ""}</th>
-                      <th className="p-3">{cur.assignedLabel || "Assigned To"}</th>
+                      <th className="p-3 hidden sm:table-cell">{cur.assignedLabel || "Assigned To"}</th>
                       <th className="p-3">Next Step</th>
                       <th className="p-3">Overall</th>
                       <th className="p-3 text-right">Actions</th>
@@ -192,13 +192,13 @@ export default function FmsPage() {
                         const anyDone = e.steps.some((s) => s.status === "done_on_time" || s.status === "done_late");
                         const anyWaiting = e.steps.some((s) => s.status === "waiting");
                         return (
-                          <tr key={e.id} className="border-b border-gray-50 hover:bg-gray-50 cursor-pointer" onClick={() => setViewEntry(e)}>
-                            <td className="p-3 font-mono text-xs">{e.uid}</td>
+                          <tr key={e.id} className="group border-b border-gray-50 hover:bg-gray-50 cursor-pointer" onClick={() => setViewEntry(e)}>
+                            <td className="p-3 font-mono text-xs sticky left-0 z-[1] bg-white group-hover:bg-gray-50">{e.uid}</td>
                             <td className="p-3">
                               <p className="font-semibold text-gray-800">{e.title}</p>
                               {e.sub && <p className="text-xs text-gray-400">{e.sub}</p>}
                             </td>
-                            <td className="p-3 text-gray-600">{e.assignedTo || "—"}</td>
+                            <td className="p-3 text-gray-600 hidden sm:table-cell">{e.assignedTo || "—"}</td>
                             <td className="p-3">
                               {ns ? (
                                 <span className="flex items-center gap-2">{ns.label} <Countdown plannedTs={ns.plannedTs} /></span>

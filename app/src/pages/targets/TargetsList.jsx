@@ -94,7 +94,7 @@ export default function TargetsList() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs uppercase tracking-wide text-gray-400 border-b border-gray-100">
-                  <th className="py-2.5 px-3 font-medium">Salesperson</th>
+                  <th className="py-2.5 px-3 font-medium sticky left-0 z-[2] bg-white">Salesperson</th>
                   {FIELDS.map((f) => (
                     <th key={f.key} className="py-2.5 px-3 font-medium">
                       {f.label}
@@ -108,7 +108,7 @@ export default function TargetsList() {
                   const spId = row.salesperson._id;
                   return (
                     <tr key={spId}>
-                      <td className="py-2 px-3 font-medium text-gray-800 whitespace-nowrap">
+                      <td className="py-2 px-3 font-medium text-gray-800 whitespace-nowrap sticky left-0 z-[1] bg-white">
                         {row.salesperson.name}
                       </td>
                       {FIELDS.map((f) => (

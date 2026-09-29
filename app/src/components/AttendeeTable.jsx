@@ -45,8 +45,8 @@ export default function AttendeeTable({
       <table className="w-full text-sm">
         <thead>
           <tr className="text-left text-xs uppercase tracking-wide text-gray-400 border-b border-gray-100">
-            <th className="py-2 px-3 font-medium">Lead</th>
-            <th className="py-2 px-3 font-medium">Owner</th>
+            <th className="py-2 px-3 font-medium sticky left-0 z-[2] bg-white">Lead</th>
+            <th className="py-2 px-3 font-medium hidden sm:table-cell">Owner</th>
             <th className="py-2 px-3 font-medium">Stage</th>
             {onRsvp && <th className="py-2 px-3 font-medium">RSVP</th>}
             <th className="py-2 px-3 font-medium text-center">Attended</th>
@@ -57,8 +57,8 @@ export default function AttendeeTable({
           {rows.map((r) => {
             const editable = canEditRow(r);
             return (
-            <tr key={r._id}>
-              <td className="py-2.5 px-3">
+            <tr key={r._id} className="group">
+              <td className="py-2.5 px-3 sticky left-0 z-[1] bg-white group-hover:bg-gray-50">
                 {r.lead ? (
                   <Link to={`/leads/${r.lead._id}`} className="font-medium text-gray-800 hover:text-primary-dark">
                     {r.lead.name}
@@ -68,7 +68,7 @@ export default function AttendeeTable({
                 )}
                 <p className="text-xs text-gray-400">{r.lead?.restaurantName || r.lead?.phone}</p>
               </td>
-              <td className="py-2.5 px-3 text-gray-500">{r.lead?.assignedTo?.name || "—"}</td>
+              <td className="py-2.5 px-3 text-gray-500 hidden sm:table-cell">{r.lead?.assignedTo?.name || "—"}</td>
               <td className="py-2.5 px-3">
                 {r.lead &&
                   (onStageChange && editable ? (

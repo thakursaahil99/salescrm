@@ -113,11 +113,11 @@ export default function FmsDashboard({ fmsList, onDrill, onOpenEntry }) {
           <p className="text-xs text-gray-400 mb-3">Click a row to open that FMS's own dashboard.</p>
           <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead><tr className="text-left text-xs text-gray-500 uppercase border-b border-gray-100"><th className="py-2">FMS</th><th>Leads</th><th>In progress</th><th>Completed</th><th>On-time rate</th><th>Overdue now</th></tr></thead>
+            <thead><tr className="text-left text-xs text-gray-500 uppercase border-b border-gray-100"><th className="py-2 sticky left-0 z-[2] bg-white">FMS</th><th>Leads</th><th>In progress</th><th>Completed</th><th>On-time rate</th><th>Overdue now</th></tr></thead>
             <tbody>
               {data.breakdown.map((b) => (
-                <tr key={b.id} className="border-b border-gray-50 cursor-pointer hover:bg-gray-50" onClick={() => setFmsId(b.id)}>
-                  <td className="py-2 font-semibold">{b.name}</td>
+                <tr key={b.id} className="group border-b border-gray-50 cursor-pointer hover:bg-gray-50" onClick={() => setFmsId(b.id)}>
+                  <td className="py-2 font-semibold sticky left-0 z-[1] bg-white group-hover:bg-gray-50">{b.name}</td>
                   <td>{b.kpi.entries}</td><td>{b.kpi.inProgress}</td><td>{b.kpi.completed}</td>
                   <td>{b.kpi.judgedSteps ? <RateChip r={b.kpi.onTimeRate} /> : <span className="text-gray-400 text-xs">—</span>}</td>
                   <td className={b.kpi.overdueSteps ? "text-red-600 font-bold" : ""}>{b.kpi.overdueSteps}</td>
@@ -385,16 +385,16 @@ function TeamTable({ team, multi, onPick }) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
-        <thead><tr className="text-left text-xs text-gray-500 uppercase border-b border-gray-100"><th className="py-2">Person</th><th>Leads</th><th>Steps done</th><th>On-time rate</th><th>Late</th><th>Overdue now</th><th>Avg delay</th></tr></thead>
+        <thead><tr className="text-left text-xs text-gray-500 uppercase border-b border-gray-100"><th className="py-2 sticky left-0 z-[2] bg-white">Person</th><th>Leads</th><th>Steps done</th><th>On-time rate</th><th>Late</th><th>Overdue now</th><th>Avg delay</th></tr></thead>
         <tbody>
           {team.map((t) => (
             <tr
               key={t.name}
-              className={`border-b border-gray-50 ${onPick && t.entries > 0 ? "cursor-pointer hover:bg-gray-50" : ""}`}
+              className={`group border-b border-gray-50 ${onPick && t.entries > 0 ? "cursor-pointer hover:bg-gray-50" : ""}`}
               onClick={onPick && t.entries > 0 ? () => onPick(t.unassigned ? "" : t.name, `${t.name}'s leads`) : undefined}
               title={onPick && t.entries > 0 ? "Click to see this person's leads" : undefined}
             >
-              <td className="py-2 font-semibold">{t.name}{!t.unassigned && !t.hasLogin ? <span className="ml-1.5 text-[10px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-full">no login</span> : null}</td>
+              <td className="py-2 font-semibold sticky left-0 z-[1] bg-white group-hover:bg-gray-50">{t.name}{!t.unassigned && !t.hasLogin ? <span className="ml-1.5 text-[10px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-full">no login</span> : null}</td>
               <td>{t.entries}</td><td>{t.done}</td>
               <td>{t.onTime + t.late + t.overdue ? <RateChip r={t.rate} /> : <span className="text-gray-400 text-xs">—</span>}</td>
               <td>{t.late}</td>
@@ -420,7 +420,7 @@ function ListCard({ title, hint, rows, multi, kind, onOpenEntry }) {
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-xs text-gray-500 uppercase border-b border-gray-100">
-                <th className="py-2">Lead</th><th>Step</th><th>Assigned</th><th>Planned</th>
+                <th className="py-2 sticky left-0 z-[2] bg-white">Lead</th><th>Step</th><th>Assigned</th><th>Planned</th>
                 {kind === "late" ? <><th>Finished</th><th>Late by</th><th>Remark</th></> : <th>Time</th>}
               </tr>
             </thead>
@@ -428,11 +428,11 @@ function ListCard({ title, hint, rows, multi, kind, onOpenEntry }) {
               {rows.map((x, i) => (
                 <tr
                   key={i}
-                  className={`border-b border-gray-50 ${onOpenEntry ? "cursor-pointer hover:bg-gray-50" : ""}`}
+                  className={`group border-b border-gray-50 ${onOpenEntry ? "cursor-pointer hover:bg-gray-50" : ""}`}
                   onClick={onOpenEntry ? () => onOpenEntry(x.fmsId, x.id) : undefined}
                   title={onOpenEntry ? "Click to open this lead" : undefined}
                 >
-                  <td className="py-2"><span className="font-semibold">{x.name}</span><br /><small className="text-gray-400">{x.companyName}{multi && x.fms ? ` · ${x.fms}` : ""}</small></td>
+                  <td className="py-2 sticky left-0 z-[1] bg-white group-hover:bg-gray-50"><span className="font-semibold">{x.name}</span><br /><small className="text-gray-400">{x.companyName}{multi && x.fms ? ` · ${x.fms}` : ""}</small></td>
                   <td>{x.step}</td>
                   <td className="whitespace-nowrap">{x.assignedTo || "—"}</td>
                   <td className="whitespace-nowrap text-xs text-gray-500">{fmtShort(x.plannedTs)}</td>
