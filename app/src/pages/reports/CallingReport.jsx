@@ -137,7 +137,7 @@ export default function CallingReport() {
               <MdDateRange size={15} className="text-gray-400 shrink-0" />
               <input
                 type="date"
-                className="bg-transparent text-sm outline-none w-[126px]"
+                className="bg-transparent text-sm outline-none w-[142px]"
                 value={draftFrom}
                 max={draftTo || undefined}
                 onChange={(e) => setDraftFrom(e.target.value)}
@@ -146,7 +146,7 @@ export default function CallingReport() {
               <span className="text-gray-300 text-xs">to</span>
               <input
                 type="date"
-                className="bg-transparent text-sm outline-none w-[126px]"
+                className="bg-transparent text-sm outline-none w-[142px]"
                 value={draftTo}
                 min={draftFrom || undefined}
                 onChange={(e) => setDraftTo(e.target.value)}
