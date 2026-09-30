@@ -1,5 +1,6 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { scopedLeadIds, canActOnLead } from "../utils/scopedLeadIds.js";
+import { teamIds } from "../utils/scope.js";
 import Webinar from "../models/Webinar.js";
 import Remark from "../models/Remark.js";
 import Lead from "../models/Lead.js";
@@ -11,9 +12,18 @@ import { LEAD_STATUS_LABELS } from "../utils/labels.js";
 // webinar_attended (e.g. a 2nd-Zoom re-run) is left exactly where it is.
 const ADVANCE_ON_ZOOM = ["new", "webinar_interested"];
 
-// Webinars are company-wide (not role-scoped) — every user sees the same list.
-// Only admin/manager create/edit them; anyone can manage registrations for
-// leads they can see.
+// The Zoom meeting itself (title/date/description) is company-wide — every
+// user sees the same list, so a salesperson knows a session exists to
+// register their own leads for it. WHO is registered on it is not: that's
+// individual lead data (name, phone, owner), so a salesperson only ever
+// sees registrations for their own leads there; admin sees everyone's,
+// manager sees their team's. Only admin/manager create/edit the meeting
+// itself.
+async function visibleRegs(registrations, user) {
+  if (user.role === "admin") return registrations;
+  const allowed = (user.role === "manager" ? await teamIds(user) : [user._id]).map(String);
+  return registrations.filter((r) => r.lead && allowed.includes(String(r.lead.assignedTo?._id || r.lead.assignedTo)));
+}
 
 // A webinar left "upcoming" past its own date is just stale data — nobody
 // flips it by hand once the session is over. Lazily correct it whenever the
@@ -25,15 +35,15 @@ async function flipPastUpcoming() {
   );
 }
 
-const listView = (w) => ({
+const listView = (w, regs) => ({
   _id: w._id,
   title: w.title,
   description: w.description,
   scheduledAt: w.scheduledAt,
   status: w.status,
   host: w.host,
-  registrationCount: w.registrations.length,
-  attendedCount: w.registrations.filter((r) => r.attended).length,
+  registrationCount: regs.length,
+  attendedCount: regs.filter((r) => r.attended).length,
   createdAt: w.createdAt,
 });
 
@@ -45,8 +55,12 @@ export const listWebinars = asyncHandler(async (req, res) => {
   const webinars = await Webinar.find(filter)
     .sort("-scheduledAt")
     .populate("host", "name")
+    .populate({ path: "registrations.lead", select: "assignedTo" })
     .lean();
-  res.json(webinars.map(listView));
+  const rows = await Promise.all(
+    webinars.map(async (w) => listView(w, await visibleRegs(w.registrations, req.user)))
+  );
+  res.json(rows);
 });
 
 // @route GET /api/webinars/:id — full doc with registrations populated
@@ -60,6 +74,7 @@ export const getWebinar = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error("Zoom meeting not found.");
   }
+  webinar.registrations = await visibleRegs(webinar.registrations, req.user);
   res.json(webinar);
 });
 

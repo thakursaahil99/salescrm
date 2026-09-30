@@ -1,12 +1,20 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { scopedLeadIds, canActOnLead } from "../utils/scopedLeadIds.js";
+import { teamIds } from "../utils/scope.js";
 import Event, { RSVP_STATUSES } from "../models/Event.js";
 import Remark from "../models/Remark.js";
 import Lead from "../models/Lead.js";
 import { LEAD_STATUS_LABELS } from "../utils/labels.js";
 
-// Physical events. Same company-wide visibility model as webinars; the
-// attendee list is `invitees` and carries an RSVP state on top of `attended`.
+// Physical events. Same company-wide visibility model as webinars for the
+// event itself — but WHO is invited is individual lead data, scoped the same
+// way (see webinarController.js's visibleRegs): a salesperson only sees
+// invitees for their own leads, manager their team's, admin everyone's.
+async function visibleInvitees(invitees, user) {
+  if (user.role === "admin") return invitees;
+  const allowed = (user.role === "manager" ? await teamIds(user) : [user._id]).map(String);
+  return invitees.filter((i) => i.lead && allowed.includes(String(i.lead.assignedTo?._id || i.lead.assignedTo)));
+}
 
 // A lead sitting at any of these stages, once ticked "attended" for an event,
 // is auto-advanced to "event_attended" — same rule Zoom attendance uses. A
@@ -23,7 +31,7 @@ async function flipPastUpcoming() {
   );
 }
 
-const listView = (e) => ({
+const listView = (e, invitees) => ({
   _id: e._id,
   title: e.title,
   description: e.description,
@@ -32,9 +40,9 @@ const listView = (e) => ({
   date: e.date,
   status: e.status,
   host: e.host,
-  inviteeCount: e.invitees.length,
-  confirmedCount: e.invitees.filter((i) => i.rsvp === "confirmed").length,
-  attendedCount: e.invitees.filter((i) => i.attended).length,
+  inviteeCount: invitees.length,
+  confirmedCount: invitees.filter((i) => i.rsvp === "confirmed").length,
+  attendedCount: invitees.filter((i) => i.attended).length,
   createdAt: e.createdAt,
 });
 
@@ -43,8 +51,15 @@ export const listEvents = asyncHandler(async (req, res) => {
   await flipPastUpcoming();
   const filter = {};
   if (req.query.status) filter.status = req.query.status;
-  const events = await Event.find(filter).sort("-date").populate("host", "name").lean();
-  res.json(events.map(listView));
+  const events = await Event.find(filter)
+    .sort("-date")
+    .populate("host", "name")
+    .populate({ path: "invitees.lead", select: "assignedTo" })
+    .lean();
+  const rows = await Promise.all(
+    events.map(async (e) => listView(e, await visibleInvitees(e.invitees, req.user)))
+  );
+  res.json(rows);
 });
 
 // @route GET /api/events/:id
@@ -58,6 +73,7 @@ export const getEvent = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error("Event not found.");
   }
+  event.invitees = await visibleInvitees(event.invitees, req.user);
   res.json(event);
 });
 
