@@ -769,8 +769,8 @@ export default function LeadsBoard() {
 
       {/* Toolbar */}
       <Card padding="p-0" className="mb-4">
-        <div className="flex flex-col gap-3 p-3 sm:p-4 lg:flex-row lg:items-center">
-          <div className="relative min-w-0 flex-1 lg:max-w-md">
+        <div className="flex flex-col gap-3 p-3 sm:p-4 xl:flex-row xl:items-center">
+          <div className="relative min-w-0 flex-1 xl:max-w-md">
             <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={19} />
             <input
               placeholder="Search name, phone, brand or city…"
@@ -788,11 +788,15 @@ export default function LeadsBoard() {
               </button>
             )}
           </div>
-          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center lg:ml-auto">
+          <div
+            className={`grid grid-cols-2 gap-2 max-md:[&>*:last-child:nth-child(odd)]:col-span-2 xl:ml-auto xl:flex xl:items-center ${
+              [!scoped, canPickOwner, true, true].filter(Boolean).length === 4 ? "md:grid-cols-4" : "md:grid-cols-3"
+            }`}
+          >
             {!scoped && (
               <PeriodFilter
                 label="Period"
-                className="sm:w-[190px]"
+                className="xl:w-[190px]"
                 value={period}
                 onChange={(k) => {
                   setPeriod(k);
@@ -803,7 +807,7 @@ export default function LeadsBoard() {
             {canPickOwner && (
               <SalespersonPicker
                 label="Owner"
-                className="sm:w-[190px]"
+                className="xl:w-[190px]"
                 value={filters.assignedTo}
                 onChange={(v) => setFilter({ assignedTo: v })}
                 people={people}
@@ -811,14 +815,14 @@ export default function LeadsBoard() {
             )}
             <MultiSelect
               label="Stage"
-              className="sm:w-[190px]"
+              className="xl:w-[190px]"
               value={filters.status}
               onChange={(v) => setFilter({ status: v })}
               options={optionsFrom(LEAD_STATUS).map((o) => ({ ...o, dot: LEAD_STATUS[o.value].dot }))}
             />
             <MultiSelect
               label="Source"
-              className="sm:w-[170px]"
+              className="xl:w-[170px]"
               value={filters.source}
               onChange={(v) => setFilter({ source: v })}
               options={optionsFrom(LEAD_SOURCE)}
