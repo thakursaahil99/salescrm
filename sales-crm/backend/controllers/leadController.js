@@ -47,12 +47,29 @@ async function attachDealValues(leads) {
 // arrives as an object, and spreading that into a Mongo filter is an injection
 // foot-gun even after the `$`/`.` sanitizer. Anything non-string is ignored.
 const str = (v) => (typeof v === "string" ? v : "");
+// A filter slicer sends one value ("new") or several, comma-joined
+// ("new,dead") — the multi-select pickers on the Leads board/Sales Team/
+// Conversions pages all use this same convention so the frontend never
+// needs to know which filters are single vs multi.
+const list = (v) =>
+  str(v)
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+const inFilter = (v) => {
+  const arr = list(v);
+  if (!arr.length) return undefined;
+  return arr.length === 1 ? arr[0] : { $in: arr };
+};
 
 function queryFilter(q) {
   const f = {};
-  if (str(q.status)) f.status = str(q.status);
-  if (str(q.source)) f.source = str(q.source);
-  if (str(q.assignedTo)) f.assignedTo = str(q.assignedTo);
+  const status = inFilter(q.status);
+  if (status !== undefined) f.status = status;
+  const source = inFilter(q.source);
+  if (source !== undefined) f.source = source;
+  const assignedTo = inFilter(q.assignedTo);
+  if (assignedTo !== undefined) f.assignedTo = assignedTo;
   if (str(q.q)) {
     const rx = new RegExp(escapeRegex(str(q.q).trim()), "i");
     f.$or = [{ name: rx }, { phone: rx }, { restaurantName: rx }, { email: rx }, { city: rx }];

@@ -8,11 +8,12 @@ import { buildReceivables } from "../utils/receivables.js";
 import { buildPaymentDelays } from "../utils/paymentDelays.js";
 import User from "../models/User.js";
 
-// Resolve the salesperson-id set a report should cover: one person if a valid
-// in-scope `?salesperson` was passed, otherwise everyone the caller manages.
+// Resolve the salesperson-id set a report should cover: the people named by
+// a valid in-scope `?salesperson=<id>` or `?salesperson=<id1>,<id2>`,
+// otherwise everyone the caller manages.
 async function reportScope(req) {
-  const personId = await resolveScopedPerson(req.user, req.query.salesperson);
-  return personId ? [personId] : await scopedSalespeople(req.user);
+  const personIds = await resolveScopedPerson(req.user, req.query.salesperson);
+  return personIds || (await scopedSalespeople(req.user));
 }
 
 // @route GET /api/reports/five-for-three?month&year  (admin, manager)

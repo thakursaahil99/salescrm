@@ -48,7 +48,7 @@ export default function ExecutiveDashboard({ title, subtitle }) {
   const nav = useNavigate();
   const now = new Date();
   const [period, setPeriod] = useState({ month: now.getMonth() + 1, year: now.getFullYear() });
-  const [salespersonId, setSalespersonId] = useState("");
+  const [salespersonIds, setSalespersonIds] = useState([]);
   const [people, setPeople] = useState([]);
   const [core, setCore] = useState(null);
   const [wide, setWide] = useState(null);
@@ -64,12 +64,12 @@ export default function ExecutiveDashboard({ title, subtitle }) {
 
   useEffect(() => {
     Promise.all([
-      getTrends({ salesperson: salespersonId || undefined }),
+      getTrends({ salesperson: salespersonIds.length ? salespersonIds.join(",") : undefined }),
       getLeaderboard({ period: "month" }),
     ])
       .then(([trends, board]) => setWide({ trends, board }))
       .catch((err) => toast.error(err));
-  }, [salespersonId, toast]);
+  }, [salespersonIds, toast]);
 
   useEffect(() => {
     getTeamPipeline()
@@ -79,7 +79,7 @@ export default function ExecutiveDashboard({ title, subtitle }) {
 
   const loadCore = useCallback((silent = false) => {
     if (!silent) setCore(null);
-    const params = { ...period, salesperson: salespersonId || undefined };
+    const params = { ...period, salesperson: salespersonIds.length ? salespersonIds.join(",") : undefined };
     Promise.all([getSummary(params), getFunnel(params)])
       .then(([summary, funnel]) => setCore({ summary, funnel }))
       .catch((err) => { if (!silent) toast.error(err); });
@@ -87,7 +87,7 @@ export default function ExecutiveDashboard({ title, subtitle }) {
     getInsights(params)
       .then(setInsights)
       .catch((err) => { if (!silent) toast.error(err); });
-  }, [period, salespersonId, toast]);
+  }, [period, salespersonIds, toast]);
 
   useEffect(() => {
     loadCore();
@@ -106,7 +106,8 @@ export default function ExecutiveDashboard({ title, subtitle }) {
 
   // The "Top" board is a company/team-wide ranking; slicing to one person
   // just narrows it to their own row instead of refetching a ranking of one.
-  const boardRows = (rows) => (salespersonId ? rows.filter((r) => r.salespersonId === salespersonId) : rows);
+  const boardRows = (rows) =>
+    salespersonIds.length ? rows.filter((r) => salespersonIds.includes(r.salespersonId)) : rows;
 
   const isYear = period.month === "year";
   const isAllTime = period.month === "all";
@@ -139,7 +140,7 @@ export default function ExecutiveDashboard({ title, subtitle }) {
     : `from=${period.year}-${pad(period.month)}-01&to=${period.year}-${pad(period.month)}-${pad(
         new Date(period.year, period.month, 0).getDate()
       )}`;
-  const spQ = salespersonId ? `&assignedTo=${salespersonId}` : "";
+  const spQ = salespersonIds.length ? `&assignedTo=${salespersonIds.join(",")}` : "";
   const leadsInMonth = (extra = "") => `/leads?${rangeQ}${spQ}${extra}`;
   const ifoInMonth = `/ifo?${rangeQ}`;
   const fromDash = { from: "dashboard" }; // Link/nav state → the list shows a Back button
@@ -155,7 +156,7 @@ export default function ExecutiveDashboard({ title, subtitle }) {
         subtitle={subtitle}
         actions={
           <div className="flex items-center gap-2">
-            <SalespersonPicker value={salespersonId} onChange={setSalespersonId} people={people} />
+            <SalespersonPicker value={salespersonIds} onChange={setSalespersonIds} people={people} />
             <MonthPicker value={period} onChange={setPeriod} allowYear allowAllTime />
           </div>
         }

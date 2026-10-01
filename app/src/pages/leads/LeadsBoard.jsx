@@ -16,7 +16,7 @@ import Card from "../../components/ui/Card.jsx";
 import Button from "../../components/ui/Button.jsx";
 import Spinner from "../../components/ui/Spinner.jsx";
 import DataTable from "../../components/DataTable.jsx";
-import Listbox from "../../components/ui/Listbox.jsx";
+import MultiSelect from "../../components/ui/MultiSelect.jsx";
 import Pagination from "../../components/ui/Pagination.jsx";
 import EmptyState from "../../components/ui/EmptyState.jsx";
 import KanbanBoard from "../../components/kanban/KanbanBoard.jsx";
@@ -43,8 +43,12 @@ import {
 
 // `status/source/q` have UI controls; the rest are drill-down filters set only
 // by a dashboard tile link (?from=…&status=… etc.) and shown as a banner.
-const emptyFilters = { status: "", source: "", q: "", from: "", to: "", open: "", followup: "", assignedTo: "" };
+// status/source/assignedTo are multi-select — held as arrays, serialized to
+// the URL/API as a comma-joined string (see cleanParams / the URL-sync effect).
+const MULTI_KEYS = ["status", "source", "assignedTo"];
+const emptyFilters = { status: [], source: [], q: "", from: "", to: "", open: "", followup: "", assignedTo: [] };
 const DRILL_KEYS = ["from", "to", "open", "followup", "assignedTo"];
+const hasValue = (v) => (Array.isArray(v) ? v.length > 0 : !!v);
 
 // Cards pulled per fetch as a column auto-fills on scroll. Bigger than the
 // backend's first-paint `perColumn` (60) so a huge stage cascades in with a
@@ -63,7 +67,8 @@ export default function LeadsBoard() {
     const f = { ...emptyFilters };
     for (const k of Object.keys(emptyFilters)) {
       const v = searchParams.get(k);
-      if (v) f[k] = v;
+      if (!v) continue;
+      f[k] = MULTI_KEYS.includes(k) ? v.split(",").filter(Boolean) : v;
     }
     return f;
   });
@@ -121,7 +126,10 @@ export default function LeadsBoard() {
 
   const cleanParams = useCallback(() => {
     const p = {};
-    for (const [k, v] of Object.entries(filters)) if (v) p[k] = v;
+    for (const [k, v] of Object.entries(filters)) {
+      if (!hasValue(v)) continue;
+      p[k] = MULTI_KEYS.includes(k) ? v.join(",") : v;
+    }
     if (!p.from && !p.to && !p.open && !p.followup && period !== "all") {
       const r = periodRange(period);
       if (r.from) p.from = r.from;
@@ -171,7 +179,10 @@ export default function LeadsBoard() {
   // Only write when something actually changed, to avoid a setSearchParams loop.
   useEffect(() => {
     const next = {};
-    for (const [k, v] of Object.entries(filters)) if (v) next[k] = v;
+    for (const [k, v] of Object.entries(filters)) {
+      if (!hasValue(v)) continue;
+      next[k] = MULTI_KEYS.includes(k) ? v.join(",") : v;
+    }
     const same =
       Object.keys(next).length === [...searchParams.keys()].length &&
       Object.entries(next).every(([k, v]) => searchParams.get(k) === v);
@@ -185,7 +196,7 @@ export default function LeadsBoard() {
   };
 
   const clearDrill = () =>
-    setFilters((f) => ({ ...f, from: "", to: "", open: "", followup: "", assignedTo: "" }));
+    setFilters((f) => ({ ...f, from: "", to: "", open: "", followup: "", assignedTo: [] }));
 
   // A bulk import's "Created on" column deliberately backdates leads to their
   // real historical date (that's the whole point — migrated data keeps its
@@ -200,14 +211,18 @@ export default function LeadsBoard() {
     setPage(1);
   };
 
-  const drillActive = DRILL_KEYS.some((k) => filters[k]);
+  const drillActive = DRILL_KEYS.some((k) => hasValue(filters[k]));
   const drillLabel = [
     filters.from || filters.to
       ? `Added ${filters.from ? fmtDate(filters.from) : "…"}–${filters.to ? fmtDate(filters.to) : "…"}`
       : null,
     filters.followup === "due" ? "Follow-up due" : null,
     filters.open === "1" ? "Open pipeline" : null,
-    filters.assignedTo ? "one salesperson" : null,
+    filters.assignedTo.length === 1
+      ? "one salesperson"
+      : filters.assignedTo.length > 1
+      ? `${filters.assignedTo.length} salespeople`
+      : null,
   ]
     .filter(Boolean)
     .join(" · ");
@@ -429,8 +444,12 @@ export default function LeadsBoard() {
     return all;
   };
   const exportLabel = () => {
-    const owner = filters.assignedTo && people.find((p) => p._id === filters.assignedTo);
-    return owner ? owner.name : "all";
+    if (filters.assignedTo.length === 1) {
+      const owner = people.find((p) => p._id === filters.assignedTo[0]);
+      if (owner) return owner.name;
+    }
+    if (filters.assignedTo.length > 1) return `${filters.assignedTo.length}-people`;
+    return "all";
   };
   const doExport = async (fmt) => {
     setExporting(true);
@@ -514,22 +533,23 @@ export default function LeadsBoard() {
               people={people}
             />
           )}
-          <Listbox
+          <MultiSelect
             className="w-40"
             value={filters.status}
             onChange={(v) => setFilter({ status: v })}
-            options={[
-              { value: "", label: "All stages" },
-              ...optionsFrom(LEAD_STATUS).map((o) => ({ ...o, dot: LEAD_STATUS[o.value].dot })),
-            ]}
+            placeholder="All stages"
+            allLabel="All stages"
+            options={optionsFrom(LEAD_STATUS).map((o) => ({ ...o, dot: LEAD_STATUS[o.value].dot }))}
           />
-          <Listbox
+          <MultiSelect
             className="w-40"
             value={filters.source}
             onChange={(v) => setFilter({ source: v })}
-            options={[{ value: "", label: "All sources" }, ...optionsFrom(LEAD_SOURCE)]}
+            placeholder="All sources"
+            allLabel="All sources"
+            options={optionsFrom(LEAD_SOURCE)}
           />
-          {(filters.status || filters.source || filters.q) && (
+          {(filters.status.length > 0 || filters.source.length > 0 || filters.q) && (
             <button
               onClick={() => setFilters(emptyFilters)}
               className="text-sm font-semibold text-gray-400 hover:text-gray-600 px-2"

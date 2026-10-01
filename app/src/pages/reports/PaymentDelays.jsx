@@ -23,7 +23,7 @@ const days = (n) => `${n} day${n === 1 ? "" : "s"}`;
 export default function PaymentDelays() {
   const toast = useToast();
   const nav = useNavigate();
-  const [salespersonId, setSalespersonId] = useState("");
+  const [salespersonIds, setSalespersonIds] = useState([]);
   const [people, setPeople] = useState([]);
 
   useEffect(() => {
@@ -33,10 +33,10 @@ export default function PaymentDelays() {
   }, []);
 
   const fetch = useCallback(
-    () => getPaymentDelays({ salesperson: salespersonId || undefined }),
-    [salespersonId]
+    () => getPaymentDelays({ salesperson: salespersonIds.length ? salespersonIds.join(",") : undefined }),
+    [salespersonIds]
   );
-  const { data, loading, error, refreshedAt, reload } = useLiveData(fetch, [salespersonId], {
+  const { data, loading, error, refreshedAt, reload } = useLiveData(fetch, [salespersonIds], {
     topics: ["conversions"],
   });
   const s = data?.summary || {};
@@ -77,7 +77,7 @@ export default function PaymentDelays() {
         subtitle="Instalments that came in late, or are overdue and still unpaid — and who they sit with."
         actions={
           <div className="flex items-center gap-2 flex-wrap">
-            <SalespersonPicker value={salespersonId} onChange={setSalespersonId} people={people} />
+            <SalespersonPicker value={salespersonIds} onChange={setSalespersonIds} people={people} />
             <Button variant="secondary" onClick={doCSV} disabled={!data}>
               <MdFileDownload size={16} /> CSV
             </Button>

@@ -16,11 +16,18 @@ export async function teamIds(user) {
   return [user._id, ...reports.map((r) => r._id)];
 }
 
+// `personId` (already validated by resolveScopedPerson) can be one id or an
+// array of several — a dashboard/report slicer narrowed to multiple people
+// at once still needs exactly one Mongo clause, not an OR of separate
+// queries.
+const personFilter = (personId) =>
+  Array.isArray(personId) ? { $in: personId } : personId;
+
 // Filter for the Lead collection (keyed on `assignedTo`). An optional
-// `personId` (already validated by resolveScopedPerson) narrows to just that
-// one salesperson, overriding the normal role-based scope.
+// `personId` (already validated by resolveScopedPerson) narrows to just
+// that salesperson (or set of them), overriding the normal role-based scope.
 export async function leadScope(user, personId) {
-  if (personId) return { assignedTo: personId };
+  if (personId && (!Array.isArray(personId) || personId.length)) return { assignedTo: personFilter(personId) };
   if (user.role === "admin") return {};
   if (user.role === "manager") return { assignedTo: { $in: await teamIds(user) } };
   return { assignedTo: user._id };
@@ -31,7 +38,7 @@ export async function leadScope(user, personId) {
 // activityScope(user, "convertedBy") for IfoConversion. Same optional
 // `personId` narrowing as leadScope.
 export async function activityScope(user, field, personId) {
-  if (personId) return { [field]: personId };
+  if (personId && (!Array.isArray(personId) || personId.length)) return { [field]: personFilter(personId) };
   if (user.role === "admin") return {};
   if (user.role === "manager") return { [field]: { $in: await teamIds(user) } };
   return { [field]: user._id };
@@ -53,17 +60,24 @@ export async function scopedSalespeople(user) {
   return rows.map((r) => r._id);
 }
 
-// Resolves an optional `?salesperson=<id>` dashboard slicer to a validated id
-// (or null for "everyone"). The id must be one the caller is already scoped
-// to — a manager can't use it to peek at another team's numbers.
+// Resolves an optional `?salesperson=<id>` or `?salesperson=<id1>,<id2>`
+// dashboard/report slicer to a validated array of ids (or null for
+// "everyone"). Every id must be one the caller is already scoped to — a
+// manager can't use it to peek at another team's numbers.
 export async function resolveScopedPerson(user, queryId) {
   if (!queryId) return null;
+  const wanted = String(queryId)
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (!wanted.length) return null;
   const allowed = await scopedSalespeople(user);
-  const match = allowed.find((id) => String(id) === String(queryId));
-  if (!match) {
+  const allowedStr = allowed.map(String);
+  const matches = wanted.filter((id) => allowedStr.includes(id));
+  if (matches.length !== wanted.length) {
     const err = new Error("That salesperson is outside your scope.");
     err.status = 403;
     throw err;
   }
-  return match;
+  return matches;
 }

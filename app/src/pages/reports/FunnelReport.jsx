@@ -40,7 +40,7 @@ const days = (n) => (n == null ? "—" : n < 1 ? "<1 day" : `${n} day${n === 1 ?
 export default function FunnelReport() {
   const toast = useToast();
   const [rangeKey, setRangeKey] = useState(() => localStorage.getItem("rbh_funnel_range") || "1m");
-  const [salespersonId, setSalespersonId] = useState("");
+  const [salespersonIds, setSalespersonIds] = useState([]);
   const [people, setPeople] = useState([]);
 
   useEffect(() => {
@@ -50,10 +50,10 @@ export default function FunnelReport() {
   }, []);
 
   const fetch = useCallback(
-    () => getFunnelReport({ from: fromFor(rangeKey), salesperson: salespersonId || undefined }),
-    [rangeKey, salespersonId]
+    () => getFunnelReport({ from: fromFor(rangeKey), salesperson: salespersonIds.length ? salespersonIds.join(",") : undefined }),
+    [rangeKey, salespersonIds]
   );
-  const { data, loading, error, refreshedAt, reload } = useLiveData(fetch, [rangeKey, salespersonId], {
+  const { data, loading, error, refreshedAt, reload } = useLiveData(fetch, [rangeKey, salespersonIds], {
     topics: ["leads", "conversions"],
   });
 
@@ -74,7 +74,7 @@ export default function FunnelReport() {
     "Stage", "Reached", "Reached %", "Step conv %", "Dropped here", "Drop %", "Currently here", "Avg days in stage",
   ].map((k) => ({ key: k, header: k }));
 
-  const fileBase = `RBH-funnel-${rangeKey}${salespersonId ? "-1person" : ""}`;
+  const fileBase = `RBH-funnel-${rangeKey}${salespersonIds.length ? "-filtered" : ""}`;
   const doCSV = () => {
     exportCSV(`${fileBase}.csv`, exportCols, exportRows());
     toast.success("CSV downloaded.");
@@ -101,7 +101,7 @@ export default function FunnelReport() {
         subtitle="Where leads flow, stall and drop off — and how long each step takes."
         actions={
           <div className="flex items-center gap-2 flex-wrap">
-            <SalespersonPicker value={salespersonId} onChange={setSalespersonId} people={people} />
+            <SalespersonPicker value={salespersonIds} onChange={setSalespersonIds} people={people} />
             <Listbox
               className="w-40"
               value={rangeKey}

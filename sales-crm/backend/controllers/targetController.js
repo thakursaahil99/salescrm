@@ -27,7 +27,7 @@ export const listTargets = asyncHandler(async (req, res) => {
   // A `?salesperson=` narrows the grid, but only to someone already in scope —
   // resolveScopedPerson 403s on anyone else rather than leaking their targets.
   const only = await resolveScopedPerson(req.user, req.query.salesperson);
-  if (only) filter.salesperson = only;
+  if (only) filter.salesperson = { $in: only };
 
   const [targets, people] = await Promise.all([
     Target.find(filter).populate("salesperson", "name").populate("setBy", "name").lean(),

@@ -7,7 +7,7 @@ import Button from "../../components/ui/Button.jsx";
 import Badge from "../../components/ui/Badge.jsx";
 import StatCard from "../../components/ui/StatCard.jsx";
 import DataTable from "../../components/DataTable.jsx";
-import Listbox from "../../components/ui/Listbox.jsx";
+import MultiSelect from "../../components/ui/MultiSelect.jsx";
 import Pagination from "../../components/ui/Pagination.jsx";
 import EmptyState from "../../components/ui/EmptyState.jsx";
 import IfoFormModal from "./IfoFormModal.jsx";
@@ -26,7 +26,7 @@ export default function IfoList() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [fromDash] = useState(() => location.state?.from === "dashboard");
   const [page, setPage] = useState(1);
-  const [type, setType] = useState(searchParams.get("type") || "");
+  const [types, setTypes] = useState(() => (searchParams.get("type") || "").split(",").filter(Boolean));
   // Date range: a dashboard drill-down link sets ?from/?to on the URL; otherwise
   // the period slicer applies (default this month). "All time" tiles from the
   // dashboard arrive with state.from === "dashboard" and no dates → show all.
@@ -53,7 +53,7 @@ export default function IfoList() {
         await listIfo({
           page,
           limit: 20,
-          type: type || undefined,
+          type: types.length ? types.join(",") : undefined,
           from: rangeFrom || undefined,
           to: rangeTo || undefined,
         })
@@ -63,7 +63,7 @@ export default function IfoList() {
     } finally {
       setLoading(false);
     }
-  }, [page, type, rangeFrom, rangeTo, toast]);
+  }, [page, types, rangeFrom, rangeTo, toast]);
 
   useEffect(() => {
     load();
@@ -196,17 +196,19 @@ export default function IfoList() {
 
       <Card padding="p-2">
         <div className="flex flex-wrap items-center gap-2 p-2">
-          <Listbox
+          <MultiSelect
             className="w-32"
-            value={type}
-            onChange={(v) => {
-              setType(v);
+            value={types}
+            onChange={(arr) => {
+              setTypes(arr);
               setPage(1);
               const next = new URLSearchParams(searchParams);
-              v ? next.set("type", v) : next.delete("type");
+              arr.length ? next.set("type", arr.join(",")) : next.delete("type");
               setSearchParams(next, { replace: true });
             }}
-            options={[{ value: "", label: "All types" }, ...typeOptions]}
+            placeholder="All types"
+            allLabel="All types"
+            options={typeOptions}
           />
           {!urlFrom && !urlTo && (
             <PeriodFilter value={period} onChange={(k) => { setPeriod(k); setPage(1); }} />

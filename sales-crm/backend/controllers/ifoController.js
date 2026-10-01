@@ -13,11 +13,13 @@ import { dateRangeFilter } from "../utils/dateRange.js";
 const DAY = 86400000;
 const dmy = (d) => new Date(d).toLocaleDateString("en-IN");
 
-// @route GET /api/conversions   (?type=ifo|rbc, ?from, ?to)
+// @route GET /api/conversions   (?type=ifo|rbc or ifo,rbc — multi-select — ?from, ?to)
 export const listIfo = asyncHandler(async (req, res) => {
   const scope = await activityScope(req.user, "convertedBy");
   const filter = { ...scope, ...dateRangeFilter("conversionDate", req.query.from, req.query.to) };
-  if (typeof req.query.type === "string" && req.query.type) filter.conversionType = req.query.type;
+  const wantedTypes = typeof req.query.type === "string" ? req.query.type.split(",").map((s) => s.trim()).filter(Boolean) : [];
+  if (wantedTypes.length === 1) filter.conversionType = wantedTypes[0];
+  else if (wantedTypes.length > 1) filter.conversionType = { $in: wantedTypes };
 
   const [result, agg, byTypeAgg, types] = await Promise.all([
     paginate(IfoConversion, filter, {

@@ -1,14 +1,16 @@
-import Listbox from "./ui/Listbox.jsx";
+import MultiSelect from "./ui/MultiSelect.jsx";
 
-// A single select that slices the dashboard down to one salesperson. `value`
-// is their id or "" for everyone; `people` is [{ _id, name }, ...].
+// Slices a report/board down to one or several salespeople. `value` is an
+// array of ids ([] for everyone); `people` is [{ _id, name }, ...].
 export default function SalespersonPicker({ value, onChange, people }) {
   return (
-    <Listbox
+    <MultiSelect
       value={value}
       onChange={onChange}
       className="w-44"
-      options={[{ value: "", label: "All salespeople" }, ...people.map((p) => ({ value: p._id, label: p.name }))]}
+      placeholder="All salespeople"
+      allLabel="All salespeople"
+      options={people.map((p) => ({ value: p._id, label: p.name }))}
     />
   );
 }

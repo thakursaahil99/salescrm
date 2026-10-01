@@ -12,7 +12,7 @@ import PageHeader from "../../components/PageHeader.jsx";
 import Card from "../../components/ui/Card.jsx";
 import Button from "../../components/ui/Button.jsx";
 import Badge from "../../components/ui/Badge.jsx";
-import Listbox from "../../components/ui/Listbox.jsx";
+import MultiSelect from "../../components/ui/MultiSelect.jsx";
 import Spinner from "../../components/ui/Spinner.jsx";
 import EmptyState from "../../components/ui/EmptyState.jsx";
 import StatCard from "../../components/ui/StatCard.jsx";
@@ -35,8 +35,8 @@ export default function Receivables() {
   const toast = useToast();
   const nav = useNavigate();
   const { byCode: typesByCode, options: typeOptions } = useConversionTypes();
-  const [type, setType] = useState("");
-  const [salespersonId, setSalespersonId] = useState("");
+  const [types, setTypes] = useState([]);
+  const [salespersonIds, setSalespersonIds] = useState([]);
   const [people, setPeople] = useState([]);
   const [remindFor, setRemindFor] = useState(null); // { lead, note }
   const [payFor, setPayFor] = useState(null); // conversion id
@@ -48,10 +48,14 @@ export default function Receivables() {
   }, []);
 
   const fetch = useCallback(
-    () => getReceivables({ type: type || undefined, salesperson: salespersonId || undefined }),
-    [type, salespersonId]
+    () =>
+      getReceivables({
+        type: types.length ? types.join(",") : undefined,
+        salesperson: salespersonIds.length ? salespersonIds.join(",") : undefined,
+      }),
+    [types, salespersonIds]
   );
-  const { data, loading, error, refreshedAt, reload } = useLiveData(fetch, [type, salespersonId], {
+  const { data, loading, error, refreshedAt, reload } = useLiveData(fetch, [types, salespersonIds], {
     topics: ["conversions"],
   });
 
@@ -94,12 +98,14 @@ export default function Receivables() {
         subtitle="Conversions that still owe money — who, how much, and how long it's been pending."
         actions={
           <div className="flex items-center gap-2 flex-wrap">
-            <SalespersonPicker value={salespersonId} onChange={setSalespersonId} people={people} />
-            <Listbox
+            <SalespersonPicker value={salespersonIds} onChange={setSalespersonIds} people={people} />
+            <MultiSelect
               className="w-32"
-              value={type}
-              onChange={setType}
-              options={[{ value: "", label: "All types" }, ...typeOptions]}
+              value={types}
+              onChange={setTypes}
+              placeholder="All types"
+              allLabel="All types"
+              options={typeOptions}
             />
             <Button variant="secondary" onClick={doCSV} disabled={!data}>
               <MdFileDownload size={16} /> CSV

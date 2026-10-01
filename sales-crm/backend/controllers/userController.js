@@ -38,11 +38,21 @@ function assertCanManage(actor, targetRole) {
 
 // @route  GET /api/users
 // @access admin, manager, salesperson (scoped)
+// One value ("manager") or several, comma-joined ("manager,admin") — the
+// Sales Team page's Role/Status filters are multi-select.
+function inFilter(v) {
+  const arr = String(v || "").split(",").map((s) => s.trim()).filter(Boolean);
+  if (!arr.length) return undefined;
+  return arr.length === 1 ? arr[0] : { $in: arr };
+}
+
 export const listUsers = asyncHandler(async (req, res) => {
   const scope = await userScope(req.user);
   const filter = { ...scope };
-  if (req.query.role) filter.role = req.query.role;
-  if (req.query.status) filter.status = req.query.status;
+  const role = inFilter(req.query.role);
+  if (role !== undefined) filter.role = role;
+  const status = inFilter(req.query.status);
+  if (status !== undefined) filter.status = status;
   if (req.query.q) {
     const rx = new RegExp(escapeRegex(String(req.query.q).trim()), "i");
     filter.$and = [{ $or: [{ name: rx }, { email: rx }, { phone: rx }, { city: rx }] }];
