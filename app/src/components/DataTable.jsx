@@ -5,7 +5,9 @@ import EmptyState from "./ui/EmptyState.jsx";
 // hideOnMobile? }]. `render(row)` overrides the default `row[key]`.
 // `onRowClick` makes rows clickable. `hideOnMobile` drops a lower-priority
 // column below the `sm` breakpoint instead of adding to the horizontal
-// scroll. Keeps markup minimal — pagination is a separate component below it.
+// scroll. `skeletonRows` (opt-in) shows placeholder rows under the real
+// header while loading instead of a spinner, so the layout doesn't jump.
+// Keeps markup minimal — pagination is a separate component below it.
 export default function DataTable({
   columns,
   rows,
@@ -13,15 +15,20 @@ export default function DataTable({
   keyField = "_id",
   onRowClick,
   empty,
+  skeletonRows = 0,
 }) {
-  if (loading) return <Spinner />;
-  if (!rows?.length) return empty || <EmptyState />;
+  if (loading && !skeletonRows) return <Spinner />;
+  if (!loading && !rows?.length) return empty || <EmptyState />;
 
   // The first column is what identifies the row (name, member, outlet…) — on
   // a phone, scrolling right to see the rest of a wide table would otherwise
   // scroll it out of view too, so there's no way to tell which row you're
   // even looking at. Pinning it keeps that context on screen the whole time.
   const stickyFirst = "sticky left-0 z-[1]";
+  const cellBase = (c, i) =>
+    `px-3.5 align-middle border-b border-gray-100 [tr:last-child>&]:border-b-0 ${
+      i === 0 ? stickyFirst : ""
+    } ${c.align === "right" ? "text-right" : ""} ${c.hideOnMobile ? "hidden sm:table-cell" : ""}`;
 
   return (
     <div className="overflow-x-auto">
@@ -31,7 +38,7 @@ export default function DataTable({
             {columns.map((c, i) => (
               <th
                 key={c.key}
-                className={`py-3 px-3.5 border-b border-gray-200 first:rounded-tl-xl last:rounded-tr-xl bg-gray-50/95 ${
+                className={`py-3 px-3.5 border-b border-gray-200 first:rounded-tl-xl last:rounded-tr-xl bg-gray-50/95 whitespace-nowrap ${
                   i === 0 ? stickyFirst + " z-[2]" : ""
                 } ${c.align === "right" ? "text-right" : ""} ${
                   c.hideOnMobile ? "hidden sm:table-cell" : ""
@@ -42,27 +49,39 @@ export default function DataTable({
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-100">
-          {rows.map((row) => (
-            <tr
-              key={row[keyField]}
-              onClick={onRowClick ? () => onRowClick(row) : undefined}
-              className={`group ${onRowClick ? "cursor-pointer hover:bg-primary-light/25" : ""} transition-colors`}
-            >
-              {columns.map((c, i) => (
-                <td
-                  key={c.key}
-                  className={`py-3.5 px-3.5 text-gray-700 align-middle bg-white group-hover:bg-primary-light/25 ${
-                    i === 0 ? stickyFirst : ""
-                  } ${c.align === "right" ? "text-right" : ""} ${
-                    c.hideOnMobile ? "hidden sm:table-cell" : ""
-                  } ${c.className || ""}`}
+        <tbody>
+          {loading
+            ? Array.from({ length: skeletonRows }).map((_, r) => (
+                <tr key={`sk-${r}`}>
+                  {columns.map((c, i) => (
+                    <td key={c.key} className={`py-4 bg-white ${cellBase(c, i)}`}>
+                      <span
+                        className={`block h-3.5 rounded-md bg-gray-100 animate-pulse ${
+                          i === 0 ? "w-40" : c.align === "right" ? "w-12 ml-auto" : "w-20"
+                        }`}
+                      />
+                    </td>
+                  ))}
+                </tr>
+              ))
+            : rows.map((row) => (
+                <tr
+                  key={row[keyField]}
+                  onClick={onRowClick ? () => onRowClick(row) : undefined}
+                  className={`group ${onRowClick ? "cursor-pointer" : ""} transition-colors`}
                 >
-                  {c.render ? c.render(row) : row[c.key] ?? "—"}
-                </td>
+                  {columns.map((c, i) => (
+                    <td
+                      key={c.key}
+                      className={`py-3.5 text-gray-700 bg-white ${
+                        onRowClick ? "group-hover:bg-[#FFF6F7]" : ""
+                      } transition-colors ${cellBase(c, i)} ${c.className || ""}`}
+                    >
+                      {c.render ? c.render(row) : row[c.key] ?? "—"}
+                    </td>
+                  ))}
+                </tr>
               ))}
-            </tr>
-          ))}
         </tbody>
       </table>
     </div>

@@ -31,6 +31,7 @@ export default function Listbox({
   renderTrigger,
   align = "left",
   title,
+  label,
 }) {
   const [open, setOpen] = useState(false);
   const [activeIdx, setActiveIdx] = useState(-1);
@@ -148,8 +149,11 @@ export default function Listbox({
           renderTrigger(selected)
         ) : (
           <>
-            <span className={`truncate ${selected ? "text-gray-800" : "text-gray-400"}`}>
-              {selected ? selected.label : placeholder}
+            <span className="truncate flex items-center gap-1.5 min-w-0">
+              {label && <span className="font-medium text-gray-500 shrink-0">{label}:</span>}
+              <span className={`truncate ${selected ? "text-gray-800" : "text-gray-400"}`}>
+                {selected ? selected.label : placeholder}
+              </span>
             </span>
             <MdExpandMore
               size={18}
@@ -166,7 +170,7 @@ export default function Listbox({
             data-listbox-panel="true"
             role="listbox"
             style={{ position: "fixed", ...panelPos }}
-            className={`z-50 w-max max-w-xs max-h-64 overflow-auto rounded-lg border border-gray-200 bg-white shadow-lg py-1 ${panelClassName}`}
+            className={`z-50 w-max max-w-xs max-h-64 overflow-auto rounded-xl border border-gray-200 bg-white shadow-modal ring-1 ring-black/5 py-1 animate-fade-in ${panelClassName}`}
           >
             {options.map((o, i) => (
               <button
@@ -181,10 +185,10 @@ export default function Listbox({
                 onMouseDown={(e) => e.stopPropagation()}
                 onMouseEnter={() => setActiveIdx(i)}
                 className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors ${
-                  i === activeIdx ? "bg-primary-light/50" : ""
+                  o.value === value ? "bg-primary-light/40" : i === activeIdx ? "bg-gray-50" : ""
                 } ${o.value === value ? "font-semibold text-gray-900" : "text-gray-700"}`}
               >
-                {o.dot && <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${o.dot}`} />}
+                {o.dot && <span className={`h-2 w-2 shrink-0 rounded-full ${o.dot}`} />}
                 <span className="truncate flex-1">{o.label}</span>
                 {o.value === value && <MdCheck size={16} className="text-primary shrink-0" />}
               </button>

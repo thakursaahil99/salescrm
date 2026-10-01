@@ -5,14 +5,20 @@ import {
   MdViewKanban,
   MdTableRows,
   MdSearch,
-  MdUploadFile,
   MdClose,
   MdArrowBack,
-  MdFileDownload,
-  MdPictureAsPdf,
+  MdPhone,
+  MdChevronRight,
+  MdExpandMore,
+  MdManageSearch,
+  MdOutlineGroupAdd,
+  MdOutlineFileDownload,
+  MdOutlineFileUpload,
+  MdOutlinePictureAsPdf,
+  MdOutlineTableChart,
 } from "react-icons/md";
-import PageHeader from "../../components/PageHeader.jsx";
 import Card from "../../components/ui/Card.jsx";
+import Avatar from "../../components/ui/Avatar.jsx";
 import Button from "../../components/ui/Button.jsx";
 import Spinner from "../../components/ui/Spinner.jsx";
 import DataTable from "../../components/DataTable.jsx";
@@ -29,15 +35,15 @@ import StatusChangeModal from "./StatusChangeModal.jsx";
 import { useToast } from "../../context/ToastContext.jsx";
 import { useAuth } from "../../context/AuthContext.jsx";
 import PeriodFilter, { periodRange } from "../../components/PeriodFilter.jsx";
-import { LEAD_STATUS, LEAD_SOURCE, optionsFrom, moveBlocked } from "../../utils/constants.js";
-import { fmtDate, inrCompact, pct } from "../../utils/format.js";
+import { LEAD_STATUS, LEAD_STATUS_ORDER, LEAD_SOURCE, optionsFrom, moveBlocked } from "../../utils/constants.js";
+import { fmtDate, fromNow, inrCompact, pct } from "../../utils/format.js";
 import { exportCSV, exportPDF } from "../../utils/exporters.js";
 import { getAssignable } from "../../services/userService.js";
 import {
   listLeads,
   getKanban,
   getKanbanColumn,
-  deleteLead,
+  getPipeline,
   undoLeadStatus,
 } from "../../services/leadService.js";
 
@@ -54,6 +60,109 @@ const hasValue = (v) => (Array.isArray(v) ? v.length > 0 : !!v);
 // backend's first-paint `perColumn` (60) so a huge stage cascades in with a
 // handful of requests, not dozens.
 const KANBAN_PAGE = 200;
+
+// One pill in the stage strip above the table. `partial` = this stage is
+// part of a multi-stage selection made from the Stage dropdown.
+function StageTab({ active, partial, label, count, dot, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`inline-flex items-center gap-2 whitespace-nowrap rounded-xl border px-3.5 py-2 text-sm font-semibold transition-all duration-150 ${
+        active
+          ? "border-primary bg-white text-gray-900 shadow-card ring-1 ring-primary/15"
+          : partial
+          ? "border-primary/40 bg-primary-light/40 text-gray-900"
+          : "border-gray-200 bg-white/70 text-gray-600 hover:border-gray-300 hover:bg-white hover:text-gray-900"
+      }`}
+    >
+      {dot && <span className={`h-2 w-2 rounded-full ${dot}`} />}
+      {label}
+      <span
+        className={`min-w-[22px] rounded-full px-1.5 py-0.5 text-center text-[11px] font-bold tabular-nums ${
+          active ? "bg-primary text-white" : "bg-gray-100 text-gray-600"
+        }`}
+      >
+        {count == null ? "–" : count.toLocaleString("en-IN")}
+      </span>
+    </button>
+  );
+}
+
+// A removable "Stage: New ×" chip in the active-filters row.
+function FilterChip({ prefix, label, dot, onRemove }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white py-1 pl-2.5 pr-1 text-xs shadow-xs">
+      {dot && <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />}
+      <span className="text-gray-500">{prefix}:</span>
+      <span className="max-w-[180px] truncate font-semibold text-gray-900">{label}</span>
+      <button
+        type="button"
+        onClick={onRemove}
+        aria-label={`Remove ${prefix} filter`}
+        className="rounded-full p-0.5 text-gray-400 transition-colors hover:bg-primary-light hover:text-primary"
+      >
+        <MdClose size={13} />
+      </button>
+    </span>
+  );
+}
+
+// "Export ▾" — one button instead of separate CSV/PDF buttons crowding the
+// header. Exports every lead matching the current filters, not just the page.
+function ExportMenu({ onExport, busy }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e) => !ref.current?.contains(e.target) && setOpen(false);
+    const onKey = (e) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  const item = (fmt, Icon, iconClass, title, hint) => (
+    <button
+      type="button"
+      onClick={() => {
+        setOpen(false);
+        onExport(fmt);
+      }}
+      className="flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-gray-50"
+    >
+      <span className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${iconClass}`}>
+        <Icon size={18} />
+      </span>
+      <span>
+        <span className="block text-sm font-semibold text-gray-900">{title}</span>
+        <span className="block text-xs text-gray-500">{hint}</span>
+      </span>
+    </button>
+  );
+
+  return (
+    <div ref={ref} className="relative">
+      <Button variant="secondary" onClick={() => setOpen((o) => !o)} disabled={busy} aria-expanded={open}>
+        <MdOutlineFileDownload size={17} /> {busy ? "Exporting…" : "Export"}
+        <MdExpandMore size={16} className={`-mr-1 transition-transform ${open ? "rotate-180" : ""}`} />
+      </Button>
+      {open && (
+        <div className="absolute right-0 z-30 mt-2 w-64 rounded-xl border border-gray-200 bg-white p-1.5 shadow-modal ring-1 ring-black/5 animate-fade-in">
+          <p className="px-3 pb-1 pt-1.5 text-[11px] font-bold uppercase tracking-wider text-gray-500">
+            Export filtered leads
+          </p>
+          {item("csv", MdOutlineTableChart, "bg-emerald-50 text-emerald-700", "Excel / CSV", "Open in Excel or Google Sheets")}
+          {item("pdf", MdOutlinePictureAsPdf, "bg-primary-light text-primary", "PDF report", "Print-ready, branded summary")}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function LeadsBoard() {
   const nav = useNavigate();
@@ -110,6 +219,9 @@ export default function LeadsBoard() {
   const [statusChange, setStatusChange] = useState(null); // { lead, toStatus }
   const [people, setPeople] = useState([]);
   const [exporting, setExporting] = useState(false);
+  // Per-stage counts for the stage strip — every active filter EXCEPT stage
+  // itself, so each tab shows how many leads it would narrow down to.
+  const [stageCounts, setStageCounts] = useState(null);
 
   // The owner picker is admin/manager only — a salesperson only ever has
   // their own leads to export, so there's nothing for them to pick.
@@ -158,6 +270,22 @@ export default function LeadsBoard() {
     load();
   }, [load]);
 
+  // Refreshed whenever the table itself reloads (filter change, real-time
+  // sync, a save) rather than on every filter keystroke separately.
+  useEffect(() => {
+    if (view !== "table") return;
+    const p = cleanParams();
+    delete p.status;
+    let alive = true;
+    getPipeline(p)
+      .then((rows) => alive && setStageCounts(rows))
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, table]);
+
   // Real-time: another salesperson's move, a new lead, or a conversion shows
   // up here without a manual refresh. Silent — no spinner flash, matches the
   // background-refresh pattern the report pages already use. Note this does
@@ -195,8 +323,11 @@ export default function LeadsBoard() {
     setFilters((f) => ({ ...f, ...patch }));
   };
 
-  const clearDrill = () =>
-    setFilters((f) => ({ ...f, from: "", to: "", open: "", followup: "", assignedTo: [] }));
+  const clearDrill = () => setFilters((f) => ({ ...f, from: "", to: "", open: "", followup: "" }));
+  const clearAll = () => {
+    setPage(1);
+    setFilters(emptyFilters);
+  };
 
   // A bulk import's "Created on" column deliberately backdates leads to their
   // real historical date (that's the whole point — migrated data keeps its
@@ -211,21 +342,43 @@ export default function LeadsBoard() {
     setPage(1);
   };
 
-  const drillActive = DRILL_KEYS.some((k) => hasValue(filters[k]));
+  // Dashboard drill-downs (date window / open pipeline / follow-up due) —
+  // owner, stage, source and search show as removable chips instead.
+  const drillActive = scoped;
   const drillLabel = [
     filters.from || filters.to
-      ? `Added ${filters.from ? fmtDate(filters.from) : "…"}–${filters.to ? fmtDate(filters.to) : "…"}`
+      ? `Added ${filters.from ? fmtDate(filters.from) : "…"} – ${filters.to ? fmtDate(filters.to) : "…"}`
       : null,
     filters.followup === "due" ? "Follow-up due" : null,
     filters.open === "1" ? "Open pipeline" : null,
-    filters.assignedTo.length === 1
-      ? "one salesperson"
-      : filters.assignedTo.length > 1
-      ? `${filters.assignedTo.length} salespeople`
-      : null,
   ]
     .filter(Boolean)
     .join(" · ");
+
+  const personName = (id) => people.find((p) => p._id === id)?.name || "Salesperson";
+  const chips = [
+    filters.q && { key: "q", prefix: "Search", label: `“${filters.q}”`, onRemove: () => setFilter({ q: "" }) },
+    ...filters.assignedTo.map((id) => ({
+      key: `as-${id}`,
+      prefix: "Owner",
+      label: personName(id),
+      onRemove: () => setFilter({ assignedTo: filters.assignedTo.filter((x) => x !== id) }),
+    })),
+    ...filters.status.map((s) => ({
+      key: `st-${s}`,
+      prefix: "Stage",
+      label: LEAD_STATUS[s]?.label || s,
+      dot: LEAD_STATUS[s]?.dot,
+      onRemove: () => setFilter({ status: filters.status.filter((x) => x !== s) }),
+    })),
+    ...filters.source.map((s) => ({
+      key: `so-${s}`,
+      prefix: "Source",
+      label: LEAD_SOURCE[s]?.label || s,
+      onRemove: () => setFilter({ source: filters.source.filter((x) => x !== s) }),
+    })),
+  ].filter(Boolean);
+  const hasFilters = chips.length > 0 || drillActive;
 
   const findLead = (id) =>
     Object.values(kanban)
@@ -342,23 +495,23 @@ export default function LeadsBoard() {
   };
 
   const ViewToggle = (
-    <div className="flex rounded-lg border border-gray-300 shadow-sm bg-white p-0.5">
-      <button
-        onClick={() => setView("kanban")}
-        className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold rounded-md transition-all ${
-          view === "kanban" ? "bg-primary text-white shadow-sm" : "text-gray-500 hover:text-gray-800"
-        }`}
-      >
-        <MdViewKanban size={16} /> Board
-      </button>
-      <button
-        onClick={() => setView("table")}
-        className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold rounded-md transition-all ${
-          view === "table" ? "bg-primary text-white shadow-sm" : "text-gray-500 hover:text-gray-800"
-        }`}
-      >
-        <MdTableRows size={16} /> Table
-      </button>
+    <div className="inline-flex rounded-lg border border-gray-200 bg-white p-1 shadow-xs" role="tablist" aria-label="Leads view">
+      {[
+        ["table", "Table", MdTableRows],
+        ["kanban", "Board", MdViewKanban],
+      ].map(([key, label, Icon]) => (
+        <button
+          key={key}
+          role="tab"
+          aria-selected={view === key}
+          onClick={() => setView(key)}
+          className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold rounded-md transition-all ${
+            view === key ? "bg-primary-light text-primary-dark" : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+          }`}
+        >
+          <Icon size={16} className={view === key ? "text-primary" : ""} /> {label}
+        </button>
+      ))}
     </div>
   );
 
@@ -367,9 +520,16 @@ export default function LeadsBoard() {
       key: "name",
       header: "Lead",
       render: (l) => (
-        <div>
-          <p className="font-medium text-gray-800">{l.name}</p>
-          <p className="text-xs text-gray-400">{l.restaurantName || l.phone}</p>
+        <div className="flex items-center gap-3 min-w-[200px]">
+          <Avatar name={l.name} />
+          <div className="min-w-0">
+            <p className="font-semibold text-gray-900 truncate group-hover:text-primary-dark transition-colors">
+              {l.name}
+            </p>
+            <p className="text-xs text-gray-500 truncate tabular-nums">
+              {l.restaurantName ? `${l.restaurantName} · ${l.phone}` : l.phone}
+            </p>
+          </div>
         </div>
       ),
     },
@@ -378,9 +538,31 @@ export default function LeadsBoard() {
       header: "Stage",
       render: (l) => <LeadStageSelect lead={l} onPick={onPickStage} />,
     },
-    { key: "source", header: "Source", hideOnMobile: true, render: (l) => LEAD_SOURCE[l.source]?.label || l.source },
+    {
+      key: "source",
+      header: "Source",
+      hideOnMobile: true,
+      render: (l) => (
+        <span className="inline-flex items-center rounded-md border border-gray-200 bg-gray-50 px-2 py-0.5 text-xs font-medium text-gray-700">
+          {LEAD_SOURCE[l.source]?.label || l.source || "—"}
+        </span>
+      ),
+    },
     { key: "city", header: "City", hideOnMobile: true, render: (l) => l.city || "—" },
-    { key: "assignedTo", header: "Owner", hideOnMobile: true, render: (l) => l.assignedTo?.name || "—" },
+    {
+      key: "assignedTo",
+      header: "Owner",
+      hideOnMobile: true,
+      render: (l) =>
+        l.assignedTo?.name ? (
+          <span className="inline-flex items-center gap-2 whitespace-nowrap">
+            <Avatar name={l.assignedTo.name} size="xs" />
+            <span className="text-gray-800">{l.assignedTo.name}</span>
+          </span>
+        ) : (
+          "—"
+        ),
+    },
     {
       key: "potentialValue",
       header: "Value",
@@ -409,7 +591,40 @@ export default function LeadsBoard() {
         );
       },
     },
-    { key: "createdAt", header: "Added", hideOnMobile: true, render: (l) => fmtDate(l.createdAt) },
+    {
+      key: "createdAt",
+      header: "Added",
+      hideOnMobile: true,
+      render: (l) => (
+        <div className="whitespace-nowrap">
+          <p className="text-gray-800">{fmtDate(l.createdAt)}</p>
+          <p className="text-xs text-gray-500">{fromNow(l.createdAt)}</p>
+        </div>
+      ),
+    },
+    {
+      key: "actions",
+      header: "",
+      align: "right",
+      render: (l) => (
+        <div className="flex items-center justify-end gap-1">
+          {l.phone && (
+            <a
+              href={`tel:${l.phone}`}
+              onClick={(e) => e.stopPropagation()}
+              title={`Call ${l.phone}`}
+              aria-label={`Call ${l.name}`}
+              className="h-8 w-8 inline-flex items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-emerald-50 hover:text-emerald-700"
+            >
+              <MdPhone size={16} />
+            </a>
+          )}
+          <span className="h-8 w-8 inline-flex items-center justify-center rounded-lg text-gray-400 transition-colors group-hover:bg-primary-light group-hover:text-primary">
+            <MdChevronRight size={20} />
+          </span>
+        </div>
+      ),
+    },
   ];
 
   const exportCols = [
@@ -479,6 +694,12 @@ export default function LeadsBoard() {
 
   const goBack = () => (window.history.state?.idx > 0 ? nav(-1) : nav("/dashboard"));
 
+  const resultCount = loading
+    ? null
+    : view === "table"
+    ? table.total
+    : Object.values(kanban).reduce((s, c) => s + (c.total || 0), 0);
+
   return (
     <div>
       {cameFromDrilldown && (
@@ -490,89 +711,139 @@ export default function LeadsBoard() {
         </button>
       )}
 
-      <PageHeader
-        title="Leads"
-        subtitle="Your pipeline from first contact to IFO conversion."
-        actions={
-          <>
-            {ViewToggle}
-            <Button variant="secondary" onClick={() => doExport("csv")} disabled={exporting}>
-              <MdFileDownload size={16} /> CSV
-            </Button>
-            <Button variant="secondary" onClick={() => doExport("pdf")} disabled={exporting}>
-              <MdPictureAsPdf size={16} /> PDF
-            </Button>
-            <Button variant="secondary" onClick={() => setImportOpen(true)}>
-              <MdUploadFile size={16} /> Import
-            </Button>
-            <Button onClick={() => setFormOpen(true)}>
-              <MdAdd size={18} /> New lead
-            </Button>
-          </>
-        }
-      />
-
-      <Card padding="p-3" className="mb-4">
-        <div className="flex flex-wrap items-center gap-2">
-          {!scoped && (
-            <PeriodFilter value={period} onChange={(k) => { setPeriod(k); setPage(1); }} />
-          )}
-          <div className="relative flex-1 min-w-[200px]">
-            <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-            <input
-              placeholder="Search name, phone, brand, city…"
-              value={filters.q}
-              onChange={(e) => setFilter({ q: e.target.value })}
-              className="w-full rounded-lg border border-gray-300 shadow-sm pl-9 pr-3 py-2 text-sm transition-[border-color,box-shadow] duration-150 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-            />
+      {/* Header */}
+      <div className="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-4 mb-5">
+        <div className="min-w-0">
+          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-primary">Sales pipeline</p>
+          <div className="mt-1 flex items-center gap-3">
+            <h1 className="text-2xl sm:text-[28px] font-bold tracking-tight text-gray-900 leading-tight">Leads</h1>
+            {resultCount != null && (
+              <span className="rounded-full bg-gray-900 px-2.5 py-0.5 text-xs font-bold text-white tabular-nums">
+                {resultCount.toLocaleString("en-IN")}
+              </span>
+            )}
           </div>
-          {canPickOwner && (
-            <SalespersonPicker
-              value={filters.assignedTo}
-              onChange={(v) => setFilter({ assignedTo: v })}
-              people={people}
-            />
-          )}
-          <MultiSelect
-            className="w-40"
-            value={filters.status}
-            onChange={(v) => setFilter({ status: v })}
-            placeholder="All stages"
-            allLabel="All stages"
-            options={optionsFrom(LEAD_STATUS).map((o) => ({ ...o, dot: LEAD_STATUS[o.value].dot }))}
-          />
-          <MultiSelect
-            className="w-40"
-            value={filters.source}
-            onChange={(v) => setFilter({ source: v })}
-            placeholder="All sources"
-            allLabel="All sources"
-            options={optionsFrom(LEAD_SOURCE)}
-          />
-          {(filters.status.length > 0 || filters.source.length > 0 || filters.q) && (
-            <button
-              onClick={() => setFilters(emptyFilters)}
-              className="text-sm font-semibold text-gray-400 hover:text-gray-600 px-2"
-            >
-              Clear
-            </button>
-          )}
+          <p className="mt-1 text-sm text-gray-500">
+            Every lead from first contact to IFO conversion — filter, act and follow up in one place.
+          </p>
         </div>
-      </Card>
+        <div className="flex flex-wrap items-center gap-2">
+          {ViewToggle}
+          <ExportMenu onExport={doExport} busy={exporting} />
+          <Button variant="secondary" onClick={() => setImportOpen(true)}>
+            <MdOutlineFileUpload size={17} /> Import
+          </Button>
+          <Button onClick={() => setFormOpen(true)}>
+            <MdAdd size={18} /> New lead
+          </Button>
+        </div>
+      </div>
 
-      {drillActive && (
-        <div className="mb-4 flex items-center gap-2 text-sm">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-light/70 text-primary-dark px-3 py-1 font-medium">
-            Showing: {drillLabel || "filtered"}
-          </span>
-          <button
-            onClick={clearDrill}
-            className="inline-flex items-center gap-1 text-gray-400 hover:text-gray-600"
-          >
-            <MdClose size={14} /> clear
-          </button>
+      {/* Stage strip — one-click focus on a single stage, with live counts */}
+      {view === "table" && (
+        <div className="-mx-1 mb-4 overflow-x-auto">
+          <div className="flex min-w-max gap-2 px-1 pb-1">
+            <StageTab
+              active={filters.status.length === 0}
+              label="All leads"
+              count={stageCounts ? stageCounts.reduce((s, r) => s + r.count, 0) : null}
+              onClick={() => setFilter({ status: [] })}
+            />
+            {LEAD_STATUS_ORDER.map((s) => {
+              const only = filters.status.length === 1 && filters.status[0] === s;
+              return (
+                <StageTab
+                  key={s}
+                  active={only}
+                  partial={!only && filters.status.includes(s)}
+                  dot={LEAD_STATUS[s].dot}
+                  label={LEAD_STATUS[s].label}
+                  count={stageCounts?.find((r) => r.status === s)?.count ?? null}
+                  onClick={() => setFilter({ status: only ? [] : [s] })}
+                />
+              );
+            })}
+          </div>
         </div>
       )}
+
+      {/* Toolbar */}
+      <Card padding="p-0" className="mb-4">
+        <div className="flex flex-col gap-3 p-3 sm:p-4 lg:flex-row lg:items-center">
+          <div className="relative min-w-0 flex-1 lg:max-w-md">
+            <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={19} />
+            <input
+              placeholder="Search name, phone, brand or city…"
+              value={filters.q}
+              onChange={(e) => setFilter({ q: e.target.value })}
+              className="w-full rounded-lg border border-gray-300 bg-gray-50/70 pl-10 pr-9 py-2.5 text-sm shadow-sm transition-[border-color,box-shadow,background-color] duration-150 hover:border-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+            />
+            {filters.q && (
+              <button
+                onClick={() => setFilter({ q: "" })}
+                aria-label="Clear search"
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+              >
+                <MdClose size={16} />
+              </button>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center lg:ml-auto">
+            {!scoped && (
+              <PeriodFilter
+                label="Period"
+                className="sm:w-[190px]"
+                value={period}
+                onChange={(k) => {
+                  setPeriod(k);
+                  setPage(1);
+                }}
+              />
+            )}
+            {canPickOwner && (
+              <SalespersonPicker
+                label="Owner"
+                className="sm:w-[190px]"
+                value={filters.assignedTo}
+                onChange={(v) => setFilter({ assignedTo: v })}
+                people={people}
+              />
+            )}
+            <MultiSelect
+              label="Stage"
+              className="sm:w-[190px]"
+              value={filters.status}
+              onChange={(v) => setFilter({ status: v })}
+              options={optionsFrom(LEAD_STATUS).map((o) => ({ ...o, dot: LEAD_STATUS[o.value].dot }))}
+            />
+            <MultiSelect
+              label="Source"
+              className="sm:w-[170px]"
+              value={filters.source}
+              onChange={(v) => setFilter({ source: v })}
+              options={optionsFrom(LEAD_SOURCE)}
+            />
+          </div>
+        </div>
+
+        {(chips.length > 0 || drillActive) && (
+          <div className="flex flex-wrap items-center gap-2 border-t border-gray-100 bg-gray-50/50 px-3 py-2.5 sm:px-4 rounded-b-xl">
+            <span className="mr-1 text-xs font-semibold text-gray-500">Filtered by</span>
+            {drillActive && (
+              <FilterChip prefix="From dashboard" label={drillLabel || "filtered"} onRemove={clearDrill} />
+            )}
+            {chips.map((c) => (
+              <FilterChip key={c.key} prefix={c.prefix} label={c.label} dot={c.dot} onRemove={c.onRemove} />
+            ))}
+            <button
+              onClick={clearAll}
+              className="ml-1 text-xs font-semibold text-primary hover:text-primary-dark hover:underline"
+            >
+              Clear all
+            </button>
+          </div>
+        )}
+      </Card>
 
       {view === "kanban" ? (
         loading ? (
@@ -589,22 +860,59 @@ export default function LeadsBoard() {
           />
         )
       ) : (
-        <Card padding="p-2">
+        <Card padding="p-0" className="overflow-hidden">
           <DataTable
             columns={columns}
             rows={table.data}
             loading={loading}
+            skeletonRows={8}
             onRowClick={(l) => nav(`/leads/${l._id}`)}
-            empty={<EmptyState title="No leads match" message="Try a different filter, or add a lead." />}
+            empty={
+              hasFilters ? (
+                <EmptyState
+                  icon={MdManageSearch}
+                  title="No leads match these filters"
+                  message="Try removing a filter, widening the period, or searching for something else."
+                  action={
+                    <Button variant="secondary" onClick={clearAll}>
+                      Clear all filters
+                    </Button>
+                  }
+                />
+              ) : (
+                <EmptyState
+                  icon={MdOutlineGroupAdd}
+                  title={period === "all" ? "No leads yet" : "No leads in this period"}
+                  message={
+                    period === "all"
+                      ? "Add your first lead, or import a list from Excel / CSV to get started."
+                      : "Nothing was added in this window. Switch the period to “All time” to see older leads."
+                  }
+                  action={
+                    <div className="flex flex-wrap justify-center gap-2">
+                      <Button onClick={() => setFormOpen(true)}>
+                        <MdAdd size={18} /> New lead
+                      </Button>
+                      <Button variant="secondary" onClick={() => setImportOpen(true)}>
+                        <MdOutlineFileUpload size={17} /> Import
+                      </Button>
+                    </div>
+                  }
+                />
+              )
+            }
           />
-          <div className="px-2">
-            <Pagination
-              page={table.page}
-              pages={table.pages}
-              total={table.total}
-              onChange={setPage}
-            />
-          </div>
+          {table.pages > 1 && (
+            <div className="border-t border-gray-100 px-4">
+              <Pagination
+                page={table.page}
+                pages={table.pages}
+                total={table.total}
+                onChange={setPage}
+                noun="leads"
+              />
+            </div>
+          )}
         </Card>
       )}
 

@@ -38,13 +38,14 @@ export function periodRange(key) {
 
 export const periodLabel = (key) => PERIODS.find((p) => p.key === key)?.label || "This month";
 
-export default function PeriodFilter({ value, onChange, className = "" }) {
+export default function PeriodFilter({ value, onChange, className = "", label }) {
   return (
     <Listbox
       value={value}
       onChange={onChange}
       title="Time window"
-      className={`w-40 ${className}`}
+      label={label}
+      className={className || "w-40"}
       options={PERIODS.map((p) => ({ value: p.key, label: p.label }))}
     />
   );
