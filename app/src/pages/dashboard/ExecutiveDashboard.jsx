@@ -111,9 +111,18 @@ export default function ExecutiveDashboard({ title, subtitle }) {
 
   const isYear = period.month === "year";
   const isAllTime = period.month === "all";
-  const periodLabel = isAllTime ? "all time" : isYear ? `${period.year}` : `${MONTHS[period.month - 1]} ${period.year}`;
-  const periodNoun = isAllTime ? "All time" : isYear ? "Full year" : "This month";
-  const leadsStatLabel = isAllTime
+  const isToday = period.month === "today";
+  const periodLabel = isToday
+    ? "today"
+    : isAllTime
+    ? "all time"
+    : isYear
+    ? `${period.year}`
+    : `${MONTHS[period.month - 1]} ${period.year}`;
+  const periodNoun = isToday ? "Today" : isAllTime ? "All time" : isYear ? "Full year" : "This month";
+  const leadsStatLabel = isToday
+    ? "Leads · today"
+    : isAllTime
     ? "Leads · all time"
     : isYear
     ? `Leads · ${period.year}`
@@ -133,7 +142,11 @@ export default function ExecutiveDashboard({ title, subtitle }) {
   // Drill-down link builders — the selected period as a date range (all time →
   // an open-ended range so the Leads list matches), plus the salesperson slicer.
   const pad = (n) => String(n).padStart(2, "0");
-  const rangeQ = isAllTime
+  const t = new Date();
+  const todayStr = `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`;
+  const rangeQ = isToday
+    ? `from=${todayStr}&to=${todayStr}`
+    : isAllTime
     ? `from=2000-01-01&to=${new Date().toISOString().slice(0, 10)}`
     : isYear
     ? `from=${period.year}-01-01&to=${period.year}-12-31`
@@ -157,7 +170,7 @@ export default function ExecutiveDashboard({ title, subtitle }) {
         actions={
           <div className="flex items-center gap-2">
             <SalespersonPicker value={salespersonIds} onChange={setSalespersonIds} people={people} />
-            <MonthPicker value={period} onChange={setPeriod} allowYear allowAllTime />
+            <MonthPicker value={period} onChange={setPeriod} allowToday allowYear allowAllTime />
           </div>
         }
       />

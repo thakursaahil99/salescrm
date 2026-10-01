@@ -10,7 +10,7 @@ import ConversionType from "../models/ConversionType.js";
 import EventBooking from "../models/EventBooking.js";
 import User from "../models/User.js";
 import { convertedLeadStages } from "../utils/convertedOnly.js";
-import { istDate, istMonthRange } from "../utils/istTime.js";
+import { istDate, istMonthRange, istTodayRange } from "../utils/istTime.js";
 import { LEAD_SOURCE_LABELS } from "../utils/labels.js";
 
 const startOfMonth = (d = new Date()) => new Date(d.getFullYear(), d.getMonth(), 1);
@@ -38,6 +38,7 @@ const sum = (agg) => agg[0]?.v || 0;
 //   month 1-12   → that IST calendar month of ?year   (default: current month)
 //   month "year" → all of ?year (IST)
 //   month "all"  → all time — no date filter at all
+//   month "today"→ today's IST calendar day so far
 // Returns { mode, month, year, range }; `range` is a { $gte, $lt } filter, or
 // null for all-time.
 function periodWindow(q) {
@@ -47,6 +48,7 @@ function periodWindow(q) {
   const cap = (end) => (end > now ? now : end);
 
   if (key === "all") return { mode: "all", year, range: null };
+  if (key === "today") return { mode: "today", year, range: istTodayRange() };
   if (key === "year") {
     return {
       mode: "year",

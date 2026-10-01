@@ -11,6 +11,15 @@ const IST_OFFSET_MS = 330 * 60 * 1000; // +5:30
 export const istDate = (year, month, day = 1) =>
   new Date(Date.UTC(year, month - 1, day, 0, 0, 0) - IST_OFFSET_MS);
 
+// { $gte, $lt } for today's IST calendar day so far (midnight IST → now) —
+// "today" must mean India's today even when the server runs in UTC, where
+// midnight IST is 18:30 the previous day.
+export function istTodayRange() {
+  const now = new Date();
+  const ist = new Date(now.getTime() + IST_OFFSET_MS);
+  return { $gte: istDate(ist.getUTCFullYear(), ist.getUTCMonth() + 1, ist.getUTCDate()), $lt: now };
+}
+
 // { $gte, $lt } window for an IST calendar month, with the end capped at "now"
 // so an in-progress month doesn't include days that haven't happened yet.
 export function istMonthRange(year, month) {
