@@ -65,12 +65,20 @@ export default function CallingReport() {
   // A custom [from, to] — drives the whole report when set (no week breakdown;
   // see buildCallingReport). Defaults to present month + next 2 months so
   // upcoming Zoom meetings/events booked ahead of time are visible without a
-  // manual filter change; clearing it falls back to the Month/Week pickers.
-  // `draft*` is what's in the two date inputs before "Apply"; `range` is the
-  // one actually driving the fetch.
-  const [range, setRange] = useState(() => defaultRange());
+  // manual filter change; clearing both inputs falls back to the Month/Week
+  // pickers. `range` is derived straight from the two date inputs — there's
+  // no separate "Apply" step, so editing either date takes effect
+  // immediately (a real sale was previously stuck: `range` started non-null
+  // from defaultRange(), so the Apply button — only ever shown while
+  // `range` was null — never appeared, not even on first load).
   const [draftFrom, setDraftFrom] = useState(() => defaultRange().from);
   const [draftTo, setDraftTo] = useState(() => defaultRange().to);
+  // Once either date has been touched, stay in custom-range mode (don't pop
+  // back to the Month/Week pickers just because the other date is still
+  // being typed) — only the explicit Clear button does that.
+  const customMode = !!(draftFrom || draftTo);
+  const rangeInvalid = !!(draftFrom && draftTo && draftFrom > draftTo);
+  const range = draftFrom && draftTo && !rangeInvalid ? { from: draftFrom, to: draftTo } : null;
 
   // Jumping to a different month: back to "All Weeks" instead of leaving a
   // stale week selected from whatever month was open before.
@@ -78,13 +86,7 @@ export default function CallingReport() {
     setWeek(0);
   }, [period.month, period.year]);
 
-  const applyRange = () => {
-    if (!draftFrom || !draftTo) return;
-    if (draftFrom > draftTo) return toast.error("The start date must be before the end date.");
-    setRange({ from: draftFrom, to: draftTo });
-  };
   const clearRange = () => {
-    setRange(null);
     setDraftFrom("");
     setDraftTo("");
   };
@@ -127,39 +129,38 @@ export default function CallingReport() {
         subtitle="Leads, calling coverage, and Zoom/Event attendance per salesperson — pick a week, or a custom date range, up top."
         actions={
           <div className="flex items-center gap-2 flex-wrap">
-            {!range && (
+            {!customMode && (
               <>
                 <MonthPicker value={period} onChange={setPeriod} />
                 <Listbox className="w-28" value={week} onChange={(v) => setWeek(Number(v))} options={WEEK_OPTIONS} />
               </>
             )}
-            <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-300 rounded-lg pl-2 pr-1 py-1">
-              <MdDateRange size={15} className="text-gray-400 shrink-0" />
-              <input
-                type="date"
-                className="bg-transparent text-sm outline-none w-[142px]"
-                value={draftFrom}
-                max={draftTo || undefined}
-                onChange={(e) => setDraftFrom(e.target.value)}
-                aria-label="Range start date"
-              />
-              <span className="text-gray-300 text-xs">to</span>
-              <input
-                type="date"
-                className="bg-transparent text-sm outline-none w-[142px]"
-                value={draftTo}
-                min={draftFrom || undefined}
-                onChange={(e) => setDraftTo(e.target.value)}
-                aria-label="Range end date"
-              />
-              {range ? (
-                <button onClick={clearRange} className="text-gray-400 hover:text-red-500 p-1" title="Clear the date range">
-                  <MdClose size={15} />
-                </button>
-              ) : (
-                <Button variant="secondary" size="sm" onClick={applyRange} disabled={!draftFrom || !draftTo}>
-                  Apply
-                </Button>
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-300 rounded-lg pl-2 pr-1 py-1">
+                <MdDateRange size={15} className="text-gray-400 shrink-0" />
+                <input
+                  type="date"
+                  className="bg-transparent text-sm outline-none w-[142px]"
+                  value={draftFrom}
+                  onChange={(e) => setDraftFrom(e.target.value)}
+                  aria-label="Range start date"
+                />
+                <span className="text-gray-300 text-xs">to</span>
+                <input
+                  type="date"
+                  className="bg-transparent text-sm outline-none w-[142px]"
+                  value={draftTo}
+                  onChange={(e) => setDraftTo(e.target.value)}
+                  aria-label="Range end date"
+                />
+                {customMode && (
+                  <button onClick={clearRange} className="text-gray-400 hover:text-red-500 p-1" title="Clear the date range">
+                    <MdClose size={15} />
+                  </button>
+                )}
+              </div>
+              {rangeInvalid && (
+                <p className="text-xs text-red-500 px-1">Start date must be before the end date.</p>
               )}
             </div>
             <Button variant="secondary" onClick={doCSV} disabled={!data}>
