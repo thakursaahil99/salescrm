@@ -7,6 +7,7 @@ import { useToast } from "../../context/ToastContext.jsx";
 import { useAuth } from "../../context/AuthContext.jsx";
 import { ROLES } from "../../utils/roles.js";
 import { createUser, updateUser } from "../../services/userService.js";
+import { phoneOnChange } from "../../utils/inputFilters.js";
 
 // Create or edit a team member. `user` null => create. Managers only ever see
 // the salesperson role and can't reassign the reporting manager.
@@ -113,7 +114,17 @@ export default function UserFormModal({ open, onClose, onSaved, user, managers =
                 !v || /^[a-z0-9][a-z0-9._-]{2,59}$/.test(v) || "Letters/numbers/._- only, min 3.",
             })}
           />
-          <Input label="Phone" {...register("phone")} />
+          <Input
+            label="Phone (optional)"
+            inputMode="numeric"
+            maxLength={10}
+            placeholder="10-digit number"
+            error={errors.phone?.message}
+            {...register("phone", {
+              onChange: phoneOnChange,
+              validate: (v) => !v || v.length === 10 || "Enter a 10-digit phone number.",
+            })}
+          />
           <Input
             label={editing ? "New password" : "Temporary password"}
             type="password"

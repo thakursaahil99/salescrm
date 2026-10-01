@@ -14,6 +14,7 @@ import { ROLE_LABELS } from "../../utils/roles.js";
 import { initials, inrCompact } from "../../utils/format.js";
 import { updateProfile, changePassword } from "../../services/authService.js";
 import { createConversionType, updateConversionType } from "../../services/conversionTypeService.js";
+import { phoneOnChange } from "../../utils/inputFilters.js";
 
 function ProfileForm() {
   const { user, refresh } = useAuth();
@@ -64,7 +65,17 @@ function ProfileForm() {
             error={errors.name?.message}
             {...register("name", { required: "Name is required." })}
           />
-          <Input label="Phone" {...register("phone")} />
+          <Input
+            label="Phone"
+            inputMode="numeric"
+            maxLength={10}
+            placeholder="10-digit number"
+            error={errors.phone?.message}
+            {...register("phone", {
+              onChange: phoneOnChange,
+              validate: (v) => !v || v.length === 10 || "Enter a 10-digit phone number.",
+            })}
+          />
           <Input label="City" {...register("city")} />
           <Input label="State" {...register("state")} />
         </div>

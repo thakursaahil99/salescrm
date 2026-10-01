@@ -26,6 +26,9 @@ export default function AddLeadModal({ open, onClose, onSaved, salespersons, isA
   const { push } = useToast();
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+  // Contact No. only ever accepts digits, capped at 10, as the user types —
+  // same restriction the Sales CRM's lead phone field uses.
+  const setPhone = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value.replace(/\D/g, "").slice(0, 10) }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -75,7 +78,14 @@ export default function AddLeadModal({ open, onClose, onSaved, salespersons, isA
         </div>
         <div>
           <label className="text-xs font-semibold text-gray-600 mb-1 block">Contact No.</label>
-          <input className="input" value={form.contactNo} onChange={set("contactNo")} />
+          <input
+            className="input"
+            value={form.contactNo}
+            onChange={setPhone("contactNo")}
+            inputMode="numeric"
+            maxLength={10}
+            placeholder="10-digit number"
+          />
         </div>
         <div>
           <label className="text-xs font-semibold text-gray-600 mb-1 block">Catalogue Given</label>

@@ -32,6 +32,7 @@ export default function EditLeadModal({ open, lead, onClose, onSaved, salesperso
 
   if (!form) return null;
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+  const setPhone = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value.replace(/\D/g, "").slice(0, 10) }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -80,7 +81,14 @@ export default function EditLeadModal({ open, lead, onClose, onSaved, salesperso
         </div>
         <div>
           <label className="text-xs font-semibold text-gray-600 mb-1 block">Contact No.</label>
-          <input className="input" value={form.contactNo} onChange={set("contactNo")} />
+          <input
+            className="input"
+            value={form.contactNo}
+            onChange={setPhone("contactNo")}
+            inputMode="numeric"
+            maxLength={10}
+            placeholder="10-digit number"
+          />
         </div>
         <div>
           <label className="text-xs font-semibold text-gray-600 mb-1 block">Catalogue Given</label>

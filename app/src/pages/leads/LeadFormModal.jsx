@@ -8,6 +8,7 @@ import { useAuth } from "../../context/AuthContext.jsx";
 import { ROLES } from "../../utils/roles.js";
 import { LEAD_SOURCE, optionsFrom } from "../../utils/constants.js";
 import { createLead, updateLead } from "../../services/leadService.js";
+import { phoneOnChange } from "../../utils/inputFilters.js";
 import { getAssignable } from "../../services/userService.js";
 
 export default function LeadFormModal({ open, onClose, onSaved, lead }) {
@@ -94,13 +95,13 @@ export default function LeadFormModal({ open, onClose, onSaved, lead }) {
           label="Phone"
           required
           inputMode="numeric"
-          maxLength={14}
+          maxLength={10}
           placeholder="10-digit number"
           error={errors.phone?.message}
           {...register("phone", {
             required: "Phone is required.",
-            validate: (v) =>
-              (v || "").replace(/\D/g, "").length === 10 || "Enter a 10-digit phone number.",
+            onChange: phoneOnChange,
+            validate: (v) => (v || "").length === 10 || "Enter a 10-digit phone number.",
           })}
         />
         <Input label="Email" type="email" {...register("email")} />
