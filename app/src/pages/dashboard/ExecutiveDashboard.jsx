@@ -47,7 +47,7 @@ export default function ExecutiveDashboard({ title, subtitle }) {
   const toast = useToast();
   const nav = useNavigate();
   const now = new Date();
-  const [period, setPeriod] = useState({ month: now.getMonth() + 1, year: now.getFullYear() });
+  const [period, setPeriod] = useState({ month: "today", year: now.getFullYear() });
   const [salespersonIds, setSalespersonIds] = useState([]);
   const [people, setPeople] = useState([]);
   const [core, setCore] = useState(null);
