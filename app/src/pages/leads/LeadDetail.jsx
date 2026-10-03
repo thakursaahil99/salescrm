@@ -479,18 +479,20 @@ export default function LeadDetail() {
                 <b>{LEAD_STATUS[prevStage]?.label || prevStage}</b>
               </button>
             )}
-            <button
-              onClick={doCNP}
-              disabled={busy}
-              className={`mb-3 inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold disabled:opacity-60 transition-colors ${
-                lead.callNotPicked
-                  ? "border-orange-400 bg-orange-50 text-orange-700 hover:bg-orange-100"
-                  : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
-              }`}
-            >
-              <MdPhoneMissed size={14} />
-              {lead.callNotPicked ? "✓ Call Not Picked (click to clear)" : "Mark: Call Not Picked"}
-            </button>
+            {lead.status === "followup" && (
+              <button
+                onClick={doCNP}
+                disabled={busy}
+                className={`mb-3 inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold disabled:opacity-60 transition-colors ${
+                  lead.callNotPicked
+                    ? "border-orange-400 bg-orange-50 text-orange-700 hover:bg-orange-100"
+                    : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                <MdPhoneMissed size={14} />
+                {lead.callNotPicked ? "✓ Call Not Picked (click to clear)" : "Mark: Call Not Picked"}
+              </button>
+            )}
             )}
             {sessionCfg && (
               <label className="block mb-3">
