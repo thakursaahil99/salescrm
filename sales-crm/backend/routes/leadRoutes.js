@@ -12,6 +12,7 @@ import {
   deleteLead,
   listRemarks,
   addRemark,
+  toggleCallNotPicked,
 } from "../controllers/leadController.js";
 import { protect, authorize } from "../middleware/authMiddleware.js";
 
@@ -26,6 +27,7 @@ router.get("/:id", getLead);
 router.put("/:id", updateLead);
 router.patch("/:id/status", updateLeadStatus);
 router.post("/:id/undo-status", undoLeadStatus);
+router.patch("/:id/call-not-picked", toggleCallNotPicked);
 router.patch("/:id/assign", authorize("admin", "manager"), assignLead);
 router.delete("/:id", authorize("admin", "manager"), deleteLead);
 router.get("/:id/remarks", listRemarks);

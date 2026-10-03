@@ -37,6 +37,8 @@ export const updateLeadStatus = (id, body) =>
   api.patch(`/leads/${id}/status`, body).then((r) => r.data);
 export const undoLeadStatus = (id) =>
   api.post(`/leads/${id}/undo-status`).then((r) => r.data);
+export const toggleCallNotPicked = (id) =>
+  api.patch(`/leads/${id}/call-not-picked`).then((r) => r.data);
 export const assignLead = (id, assignedTo) =>
   api.patch(`/leads/${id}/assign`, { assignedTo }).then((r) => r.data);
 export const deleteLead = (id) => api.delete(`/leads/${id}`).then((r) => r.data);

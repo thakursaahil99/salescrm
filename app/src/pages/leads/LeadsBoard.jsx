@@ -8,6 +8,7 @@ import {
   MdClose,
   MdArrowBack,
   MdPhone,
+  MdPhoneMissed,
   MdChevronRight,
   MdExpandMore,
   MdManageSearch,
@@ -52,8 +53,8 @@ import {
 // status/source/assignedTo are multi-select — held as arrays, serialized to
 // the URL/API as a comma-joined string (see cleanParams / the URL-sync effect).
 const MULTI_KEYS = ["status", "source", "assignedTo"];
-const emptyFilters = { status: [], source: [], q: "", from: "", to: "", open: "", followup: "", assignedTo: [] };
-const DRILL_KEYS = ["from", "to", "open", "followup", "assignedTo"];
+const emptyFilters = { status: [], source: [], q: "", from: "", to: "", open: "", followup: "", cnp: "", assignedTo: [] };
+const DRILL_KEYS = ["from", "to", "open", "followup", "cnp", "assignedTo"];
 const hasValue = (v) => (Array.isArray(v) ? v.length > 0 : !!v);
 
 // Cards pulled per fetch as a column auto-fills on scroll. Bigger than the
@@ -234,7 +235,7 @@ export default function LeadsBoard() {
 
   // A dashboard drill-down brings its own scope (?from/?to/?open/?followup);
   // otherwise the month/period slicer applies.
-  const scoped = !!(filters.from || filters.to || filters.open || filters.followup);
+  const scoped = !!(filters.from || filters.to || filters.open || filters.followup || filters.cnp);
 
   const cleanParams = useCallback(() => {
     const p = {};
@@ -323,7 +324,7 @@ export default function LeadsBoard() {
     setFilters((f) => ({ ...f, ...patch }));
   };
 
-  const clearDrill = () => setFilters((f) => ({ ...f, from: "", to: "", open: "", followup: "" }));
+  const clearDrill = () => setFilters((f) => ({ ...f, from: "", to: "", open: "", followup: "", cnp: "" }));
   const clearAll = () => {
     setPage(1);
     setFilters(emptyFilters);
@@ -351,6 +352,7 @@ export default function LeadsBoard() {
       : null,
     filters.followup === "due" ? "Follow-up due" : null,
     filters.open === "1" ? "Open pipeline" : null,
+    filters.cnp === "1" ? "Call Not Picked" : null,
   ]
     .filter(Boolean)
     .join(" · ");
@@ -536,7 +538,16 @@ export default function LeadsBoard() {
     {
       key: "status",
       header: "Stage",
-      render: (l) => <LeadStageSelect lead={l} onPick={onPickStage} />,
+      render: (l) => (
+        <div className="flex flex-col gap-1">
+          <LeadStageSelect lead={l} onPick={onPickStage} />
+          {l.callNotPicked && (
+            <span className="inline-flex items-center gap-1 rounded-md border border-orange-300 bg-orange-50 px-1.5 py-0.5 text-[11px] font-semibold text-orange-700 w-fit">
+              <MdPhoneMissed size={11} /> Not picked
+            </span>
+          )}
+        </div>
+      ),
     },
     {
       key: "source",
@@ -827,6 +838,18 @@ export default function LeadsBoard() {
               onChange={(v) => setFilter({ source: v })}
               options={optionsFrom(LEAD_SOURCE)}
             />
+            <button
+              onClick={() => setFilter({ cnp: filters.cnp === "1" ? "" : "1" })}
+              title="Show only leads where the call was not picked up"
+              className={`inline-flex items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors whitespace-nowrap xl:w-auto ${
+                filters.cnp === "1"
+                  ? "border-orange-400 bg-orange-50 text-orange-700 hover:bg-orange-100"
+                  : "border-gray-300 bg-white text-gray-600 hover:bg-gray-50"
+              }`}
+            >
+              <MdPhoneMissed size={16} />
+              <span className="hidden sm:inline">Call Not Picked</span>
+            </button>
           </div>
         </div>
 

@@ -16,6 +16,7 @@ import {
   MdClose,
   MdPayments,
   MdUndo,
+  MdPhoneMissed,
 } from "react-icons/md";
 import PageHeader from "../../components/PageHeader.jsx";
 import Card from "../../components/ui/Card.jsx";
@@ -42,6 +43,7 @@ import {
   undoLeadStatus,
   addRemark,
   deleteLead,
+  toggleCallNotPicked,
 } from "../../services/leadService.js";
 import { listReminders, deleteReminder } from "../../services/reminderService.js";
 
@@ -264,6 +266,19 @@ export default function LeadDetail() {
     }
   };
 
+  const doCNP = async () => {
+    setBusy(true);
+    try {
+      const { callNotPicked } = await toggleCallNotPicked(id);
+      toast.success(callNotPicked ? "Flagged: Call Not Picked." : "Flag cleared.");
+      await reload();
+    } catch (err) {
+      toast.error(err);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <div>
       <Link to="/leads" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-3">
@@ -462,6 +477,20 @@ export default function LeadDetail() {
               >
                 <MdUndo size={14} /> Undo last change — back to{" "}
                 <b>{LEAD_STATUS[prevStage]?.label || prevStage}</b>
+              </button>
+            )}
+            {lead.status === "followup" && (
+              <button
+                onClick={doCNP}
+                disabled={busy}
+                className={`mb-3 inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold disabled:opacity-60 transition-colors ${
+                  lead.callNotPicked
+                    ? "border-orange-400 bg-orange-50 text-orange-700 hover:bg-orange-100"
+                    : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                <MdPhoneMissed size={14} />
+                {lead.callNotPicked ? "✓ Call Not Picked (click to clear)" : "Mark: Call Not Picked"}
               </button>
             )}
             {sessionCfg && (

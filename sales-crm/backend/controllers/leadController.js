@@ -82,6 +82,8 @@ function queryFilter(q) {
     f.status = { $nin: LEAD_CLOSED };
   }
   if (q.followup === "due") f.nextFollowUpDate = { $lte: new Date() };
+  // ?cnp=1 — only leads where the "call not picked" flag is set
+  if (q.cnp === "1") f.callNotPicked = true;
   return f;
 }
 
@@ -748,4 +750,17 @@ export const addRemark = asyncHandler(async (req, res) => {
   await findScoped(req, res);
   const remark = await logRemark(req.params.id, req.user._id, text.trim(), "note");
   res.status(201).json(await remark.populate("author", "name"));
+});
+
+// @route PATCH /api/leads/:id/call-not-picked — toggle the "call not picked"
+// flag on a follow-up lead. NOT a stage change — just a marker so the team
+// can see at a glance which follow-ups need another call attempt. The flag is
+// also cleared automatically by the pre-save hook whenever the lead moves to
+// a new stage.
+export const toggleCallNotPicked = asyncHandler(async (req, res) => {
+  const lead = await findScoped(req, res);
+  if (!lead) return; // findScoped already sent 404/403
+  lead.callNotPicked = !lead.callNotPicked;
+  await lead.save();
+  res.json({ callNotPicked: lead.callNotPicked });
 });

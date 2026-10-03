@@ -268,6 +268,15 @@ export default function ExecutiveDashboard({ title, subtitle }) {
             <StatCard label="Open pipeline value" value={inrCompact(core.summary.pipelineValue)} icon={MdOutlineFilterAlt} hint="active leads" to={`/leads?open=1${spQ}`} state={fromDash} />
             <StatCard label="Follow-ups due" value={core.summary.openFollowUps} hint="overdue + today" to={`/leads?followup=due${spQ}`} state={fromDash} />
             <StatCard
+              label="Call not picked"
+              value={core.summary.callNotPicked || 0}
+              icon={MdOutlinePhoneInTalk}
+              accent="text-orange-600"
+              hint="followup, unanswered"
+              to={`/leads?cnp=1${spQ}`}
+              state={fromDash}
+            />
+            <StatCard
               label="Total revenue"
               value={inrCompact(core.summary.totalRevenue)}
               icon={MdOutlineMonetizationOn}

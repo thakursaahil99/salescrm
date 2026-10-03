@@ -118,7 +118,7 @@ export const getSummary = asyncHandler(async (req, res) => {
   // `range` is a { $gte, $lt } window, or null for all-time (no date filter).
   const on = (field) => (range ? { [field]: range } : {});
 
-  const [statusRows, monthLeads, meetings, ifoMonth, pipelineAgg, ifoAll, openFollowUps, seatMonth, seatAll] =
+  const [statusRows, monthLeads, meetings, ifoMonth, pipelineAgg, ifoAll, openFollowUps, callNotPickedCount, seatMonth, seatAll] =
     await Promise.all([
       Lead.aggregate([
         { $match: { ...lf, ...on("createdAt") } },
@@ -161,6 +161,7 @@ export const getSummary = asyncHandler(async (req, res) => {
         },
       ]),
       Lead.countDocuments({ ...lf, status: { $nin: LEAD_CLOSED }, nextFollowUpDate: { $lte: new Date() } }),
+      Lead.countDocuments({ ...lf, callNotPicked: true }),
       EventBooking.aggregate([
         { $match: { ...bookF, ...on("createdAt") } },
         { $group: { _id: null, v: { $sum: "$amount" }, c: { $sum: 1 } } },
@@ -197,6 +198,7 @@ export const getSummary = asyncHandler(async (req, res) => {
     totalConversions: ifoAll[0]?.c || 0,
     totalUnpaid: ifoAll[0]?.unpaid || 0,
     openFollowUps,
+    callNotPicked: callNotPickedCount,
   });
 });
 

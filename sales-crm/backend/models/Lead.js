@@ -74,6 +74,10 @@ const leadSchema = new mongoose.Schema(
     potentialValue: { type: Number, default: 0, min: 0 },
     // Why a lead was closed as `dead` or `invalid`.
     lostReason: { type: String, trim: true, maxlength: 2000 },
+    // Salesperson tried to call but the person didn't pick up. NOT a stage
+    // change — just a flag so the team knows this follow-up needs another
+    // attempt. Cleared automatically when the lead moves to a new stage.
+    callNotPicked: { type: Boolean, default: false, index: true },
   },
   { timestamps: true }
 );
@@ -95,6 +99,9 @@ leadSchema.pre("save", function trackStatus(next) {
     this.statusChangedAt = new Date();
     if (!Array.isArray(this.statusHistory)) this.statusHistory = [];
     this.statusHistory.push({ status: this.status, at: this.statusChangedAt });
+    // Moving to a new stage clears the "call not picked" flag — the lead is
+    // no longer stuck waiting for a callback.
+    this.callNotPicked = false;
   }
   next();
 });
