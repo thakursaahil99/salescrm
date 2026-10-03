@@ -493,7 +493,6 @@ export default function LeadDetail() {
                 {lead.callNotPicked ? "✓ Call Not Picked (click to clear)" : "Mark: Call Not Picked"}
               </button>
             )}
-            )}
             {sessionCfg && (
               <label className="block mb-3">
                 <span className="text-xs font-semibold text-gray-500">{sessionCfg.prompt}</span>
