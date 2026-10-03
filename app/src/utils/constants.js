@@ -98,6 +98,7 @@ export const LEAD_SOURCE = {
   referral: { label: "Referral" },
   cold_call: { label: "Cold call" },
   social: { label: "Social" },
+  facebook: { label: "Facebook" },
   walk_in: { label: "Walk-in" },
   other: { label: "Other" },
 };

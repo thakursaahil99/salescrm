@@ -28,6 +28,7 @@ export const LEAD_SOURCES = [
   "referral",
   "cold_call",
   "social",
+  "facebook",
   "walk_in",
   "other",
 ];
