@@ -99,9 +99,10 @@ leadSchema.pre("save", function trackStatus(next) {
     this.statusChangedAt = new Date();
     if (!Array.isArray(this.statusHistory)) this.statusHistory = [];
     this.statusHistory.push({ status: this.status, at: this.statusChangedAt });
-    // Moving to a new stage clears the "call not picked" flag — the lead is
-    // no longer stuck waiting for a callback.
-    this.callNotPicked = false;
+    // Clear the "call not picked" flag only when the lead LEAVES follow-up —
+    // moving INTO follow-up keeps it, so a lead flagged just before the move
+    // stays flagged once it lands in follow-up.
+    if (this.status !== "followup") this.callNotPicked = false;
   }
   next();
 });

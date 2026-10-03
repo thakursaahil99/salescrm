@@ -479,7 +479,7 @@ export default function LeadDetail() {
                 <b>{LEAD_STATUS[prevStage]?.label || prevStage}</b>
               </button>
             )}
-            {lead.status === "followup" && (
+            {(lead.status === "followup" || nextStatus === "followup") && (
               <button
                 onClick={doCNP}
                 disabled={busy}
