@@ -71,12 +71,6 @@ export default function ExecutiveDashboard({ title, subtitle }) {
       .catch((err) => toast.error(err));
   }, [salespersonIds, toast]);
 
-  useEffect(() => {
-    getTeamPipeline()
-      .then(setTeamPipe)
-      .catch(() => {});
-  }, []);
-
   const loadCore = useCallback((silent = false) => {
     if (!silent) setCore(null);
     const params = { ...period, salesperson: salespersonIds.length ? salespersonIds.join(",") : undefined };
@@ -87,6 +81,10 @@ export default function ExecutiveDashboard({ title, subtitle }) {
     getInsights(params)
       .then(setInsights)
       .catch((err) => { if (!silent) toast.error(err); });
+    // Pipeline table + chart always re-fetch with the same period filter
+    getTeamPipeline(params)
+      .then(setTeamPipe)
+      .catch(() => {});
   }, [period, salespersonIds, toast]);
 
   useEffect(() => {
@@ -265,7 +263,21 @@ export default function ExecutiveDashboard({ title, subtitle }) {
 
           {teamPipe && teamPipe.rows.length > 0 && (
             <>
-              <SectionLabel>Pipeline by salesperson</SectionLabel>
+              <SectionLabel hint={`Showing ${periodLabel}`}>Leads by salesperson</SectionLabel>
+              <Card>
+                <BarList
+                  items={[...teamPipe.rows]
+                    .sort((a, b) => b.total - a.total)
+                    .map((r, i) => ({
+                      label: r.name,
+                      value: r.total,
+                      color: CATEGORICAL[i % CATEGORICAL.length],
+                      id: r.salespersonId,
+                    }))}
+                  onItemClick={(it) => nav(leadsInMonth(`&assignedTo=${it.id}`), { state: fromDash })}
+                />
+              </Card>
+              <SectionLabel hint={`Showing ${periodLabel}`}>Pipeline by salesperson</SectionLabel>
               <Card padding="p-0">
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
@@ -292,7 +304,7 @@ export default function ExecutiveDashboard({ title, subtitle }) {
                               <td key={s} className="py-2.5 px-2 text-center">
                                 {c > 0 ? (
                                   <Link
-                                    to={`/leads?status=${s}&assignedTo=${r.salespersonId}`}
+                                    to={leadsInMonth(`&status=${s}&assignedTo=${r.salespersonId}`)}
                                     state={fromDash}
                                     className="inline-flex min-w-[24px] justify-center rounded-md px-1.5 py-0.5 font-bold text-gray-800 hover:bg-primary-light/60"
                                   >

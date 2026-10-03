@@ -281,16 +281,21 @@ export const getMyTasks = asyncHandler(async (req, res) => {
   res.json({ followUps, callsToday, overdueCalls, upcomingWebinars, upcomingEvents });
 });
 
-// @route GET /api/dashboard/team-pipeline — every salesperson in scope with a
-// count of their leads at each current stage. (admin: everyone, manager: team.)
+// @route GET /api/dashboard/team-pipeline?month&year — every salesperson in
+// scope with a count of their leads at each stage, filtered to the selected
+// period's createdAt window (same period logic as getSummary).
+// (admin: everyone, manager: team.)
 export const getTeamPipeline = asyncHandler(async (req, res) => {
   const ids = await scopedSalespeople(req.user);
   if (!ids.length) return res.json({ rows: [] });
 
+  const { range } = periodWindow(req.query);
+  const dateFilter = range ? { createdAt: range } : {};
+
   const [people, agg] = await Promise.all([
     User.find({ _id: { $in: ids } }).select("name").sort("name").lean(),
     Lead.aggregate([
-      { $match: { assignedTo: { $in: ids } } },
+      { $match: { assignedTo: { $in: ids }, ...dateFilter } },
       { $group: { _id: { sp: "$assignedTo", s: "$status" }, c: { $sum: 1 } } },
     ]),
   ]);
