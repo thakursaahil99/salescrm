@@ -266,13 +266,27 @@ export const setUserStatus = asyncHandler(async (req, res) => {
   res.json(clean);
 });
 
-// @route  DELETE /api/users/:id
+// @route  DELETE /api/users/:id   { password: "<requester's own password>" }
 // @access admin
 export const deleteUser = asyncHandler(async (req, res) => {
   if (String(req.params.id) === String(req.user._id)) {
     res.status(400);
     throw new Error("You cannot delete your own account.");
   }
+
+  // Require the requester to confirm their own login password.
+  const { password: confirmPassword } = req.body || {};
+  if (!confirmPassword) {
+    res.status(400);
+    throw new Error("Enter your login password to confirm deletion.");
+  }
+  const self = await User.findById(req.user._id).select("+password");
+  const ok = await self.comparePassword(confirmPassword);
+  if (!ok) {
+    res.status(401);
+    throw new Error("Incorrect password. Deletion cancelled.");
+  }
+
   const user = await User.findById(req.params.id);
   if (!user) {
     res.status(404);

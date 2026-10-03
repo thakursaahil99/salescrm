@@ -1,13 +1,13 @@
-import { useMemo, useState } from "react";
-import { MdAdd, MdPersonOff, MdPersonAdd, MdEdit, MdDelete, MdSearch, MdKey, MdContentCopy } from "react-icons/md";
+import { useMemo, useState, useRef } from "react";
+import { MdAdd, MdPersonOff, MdPersonAdd, MdEdit, MdDelete, MdSearch, MdKey, MdContentCopy, MdLock } from "react-icons/md";
 import PageHeader from "../../components/PageHeader.jsx";
 import Card from "../../components/ui/Card.jsx";
 import Button from "../../components/ui/Button.jsx";
 import Badge from "../../components/ui/Badge.jsx";
+import Modal from "../../components/ui/Modal.jsx";
 import DataTable from "../../components/DataTable.jsx";
 import MultiSelect from "../../components/ui/MultiSelect.jsx";
 import Pagination from "../../components/ui/Pagination.jsx";
-import ConfirmDialog from "../../components/ui/ConfirmDialog.jsx";
 import EmptyState from "../../components/ui/EmptyState.jsx";
 import { useList } from "../../hooks/useList.js";
 import { useToast } from "../../context/ToastContext.jsx";
@@ -35,7 +35,34 @@ export default function SalesTeamList() {
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [toDelete, setToDelete] = useState(null);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteError, setDeleteError] = useState("");
+  const [deleting, setDeleting] = useState(false);
   const [resetFor, setResetFor] = useState(null);
+  const pwRef = useRef(null);
+
+  const closeDeleteModal = () => {
+    setToDelete(null);
+    setDeletePassword("");
+    setDeleteError("");
+  };
+
+  const confirmDelete = async () => {
+    if (!deletePassword || deleting) return;
+    setDeleteError("");
+    setDeleting(true);
+    try {
+      await deleteUser(toDelete._id, deletePassword);
+      toast.success("Member deleted.");
+      closeDeleteModal();
+      reload();
+    } catch (err) {
+      const msg = err?.response?.data?.message || err?.message || "Deletion failed.";
+      setDeleteError(msg);
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const canManageMember = (u) =>
     me.role === ROLES.ADMIN || (me.role === ROLES.MANAGER && u.role === ROLES.SALESPERSON);
@@ -231,22 +258,42 @@ export default function SalesTeamList() {
 
       <ResetPasswordModal open={!!resetFor} onClose={() => setResetFor(null)} member={resetFor} />
 
-      <ConfirmDialog
+      {/* Password-confirmed delete modal */}
+      <Modal
         open={!!toDelete}
-        onClose={() => setToDelete(null)}
-        onConfirm={async () => {
-          try {
-            await deleteUser(toDelete._id);
-            toast.success("Member deleted.");
-            reload();
-          } catch (err) {
-            toast.error(err);
-          }
-        }}
+        onClose={closeDeleteModal}
         title={`Delete ${toDelete?.name}?`}
-        message="This permanently removes the account. If they own leads, reassign those first."
-        confirmLabel="Delete"
-      />
+        footer={
+          <>
+            <Button variant="secondary" disabled={deleting} onClick={closeDeleteModal}>
+              Cancel
+            </Button>
+            <Button variant="danger" disabled={deleting || !deletePassword} onClick={confirmDelete}>
+              {deleting ? "Deleting…" : "Delete"}
+            </Button>
+          </>
+        }
+      >
+        <p className="text-sm text-gray-600 mb-4">
+          This permanently removes <span className="font-semibold">{toDelete?.name}</span>'s account.
+          If they own leads, reassign those first.
+        </p>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          <MdLock size={14} className="inline mr-1 text-gray-500" />
+          Enter your login password to confirm
+        </label>
+        <input
+          ref={pwRef}
+          type="password"
+          value={deletePassword}
+          onChange={(e) => { setDeletePassword(e.target.value); setDeleteError(""); }}
+          onKeyDown={(e) => e.key === "Enter" && confirmDelete()}
+          placeholder="Your password"
+          autoFocus
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+        />
+        {deleteError && <p className="mt-2 text-sm text-red-600">{deleteError}</p>}
+      </Modal>
     </div>
   );
 }

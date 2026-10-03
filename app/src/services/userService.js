@@ -10,4 +10,5 @@ export const setUserStatus = (id, status) =>
 // Returns { name, email, password } — the plain password, shown once.
 export const resetUserPassword = (id, password) =>
   api.post(`/users/${id}/reset-password`, password ? { password } : {}).then((r) => r.data);
-export const deleteUser = (id) => api.delete(`/users/${id}`).then((r) => r.data);
+export const deleteUser = (id, password) =>
+  api.delete(`/users/${id}`, { data: { password } }).then((r) => r.data);
