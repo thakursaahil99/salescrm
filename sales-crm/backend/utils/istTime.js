@@ -20,6 +20,13 @@ export function istTodayRange() {
   return { $gte: istDate(ist.getUTCFullYear(), ist.getUTCMonth() + 1, ist.getUTCDate()), $lt: now };
 }
 
+// { $gte, $lt } for the last 7 rolling days (168 hours back → now).
+// Used as a fallback when today has no data (e.g. a holiday).
+export function istLastWeekRange() {
+  const now = new Date();
+  return { $gte: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000), $lt: now };
+}
+
 // { $gte, $lt } window for an IST calendar month, with the end capped at "now"
 // so an in-progress month doesn't include days that haven't happened yet.
 export function istMonthRange(year, month) {

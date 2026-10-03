@@ -75,7 +75,15 @@ export default function ExecutiveDashboard({ title, subtitle }) {
     if (!silent) setCore(null);
     const params = { ...period, salesperson: salespersonIds.length ? salespersonIds.join(",") : undefined };
     Promise.all([getSummary(params), getFunnel(params)])
-      .then(([summary, funnel]) => setCore({ summary, funnel }))
+      .then(([summary, funnel]) => {
+        setCore({ summary, funnel });
+        // Auto-fallback: if we loaded "today" and there are zero leads,
+        // silently switch to "Last 7 days" so the dashboard isn't empty on
+        // holidays or the very start of a day.
+        if (period.month === "today" && summary.monthLeads === 0) {
+          setPeriod((prev) => ({ ...prev, month: "week" }));
+        }
+      })
       .catch((err) => { if (!silent) toast.error(err); });
     if (!silent) setInsights(null);
     getInsights(params)
@@ -110,16 +118,29 @@ export default function ExecutiveDashboard({ title, subtitle }) {
   const isYear = period.month === "year";
   const isAllTime = period.month === "all";
   const isToday = period.month === "today";
+  const isWeek = period.month === "week";
   const periodLabel = isToday
     ? "today"
+    : isWeek
+    ? "last 7 days"
     : isAllTime
     ? "all time"
     : isYear
     ? `${period.year}`
     : `${MONTHS[period.month - 1]} ${period.year}`;
-  const periodNoun = isToday ? "Today" : isAllTime ? "All time" : isYear ? "Full year" : "This month";
+  const periodNoun = isToday
+    ? "Today"
+    : isWeek
+    ? "Last 7 days"
+    : isAllTime
+    ? "All time"
+    : isYear
+    ? "Full year"
+    : "This month";
   const leadsStatLabel = isToday
     ? "Leads · today"
+    : isWeek
+    ? "Leads · last 7 days"
     : isAllTime
     ? "Leads · all time"
     : isYear
@@ -142,8 +163,12 @@ export default function ExecutiveDashboard({ title, subtitle }) {
   const pad = (n) => String(n).padStart(2, "0");
   const t = new Date();
   const todayStr = `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`;
+  const weekAgo = new Date(t.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const weekAgoStr = `${weekAgo.getFullYear()}-${pad(weekAgo.getMonth() + 1)}-${pad(weekAgo.getDate())}`;
   const rangeQ = isToday
     ? `from=${todayStr}&to=${todayStr}`
+    : isWeek
+    ? `from=${weekAgoStr}&to=${todayStr}`
     : isAllTime
     ? `from=2000-01-01&to=${new Date().toISOString().slice(0, 10)}`
     : isYear
@@ -168,7 +193,7 @@ export default function ExecutiveDashboard({ title, subtitle }) {
         actions={
           <div className="flex items-center gap-2">
             <SalespersonPicker value={salespersonIds} onChange={setSalespersonIds} people={people} />
-            <MonthPicker value={period} onChange={setPeriod} allowToday allowYear allowAllTime />
+            <MonthPicker value={period} onChange={setPeriod} allowToday allowWeek allowYear allowAllTime />
           </div>
         }
       />
