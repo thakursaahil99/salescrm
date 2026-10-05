@@ -18,20 +18,26 @@ export async function seedBase({ quiet = false } = {}) {
 
   await seedAdmin();
 
-  const head = await upsert({
-    email: process.env.SEED_MANAGER_EMAIL || "saleshead@redbeanhospitality.com",
-    password: process.env.SEED_MANAGER_PASSWORD || "Head@123",
-    name: "Sales Head",
-    role: "manager",
-  });
+  // Only seed the demo staff on a truly empty system. If any manager or
+  // salesperson account already exists, the team is set up — don't recreate
+  // demo accounts that the admin intentionally deleted.
+  const staffExists = await User.exists({ role: { $in: ["manager", "salesperson"] } });
+  if (!staffExists) {
+    const head = await upsert({
+      email: process.env.SEED_MANAGER_EMAIL || "saleshead@redbeanhospitality.com",
+      password: process.env.SEED_MANAGER_PASSWORD || "Head@123",
+      name: "Sales Head",
+      role: "manager",
+    });
 
-  await upsert({
-    email: process.env.SEED_SALES_EMAIL || "sales@redbeanhospitality.com",
-    password: process.env.SEED_SALES_PASSWORD || "Sales@123",
-    name: "Sales Person",
-    role: "salesperson",
-    manager: head?._id,
-  });
+    await upsert({
+      email: process.env.SEED_SALES_EMAIL || "sales@redbeanhospitality.com",
+      password: process.env.SEED_SALES_PASSWORD || "Sales@123",
+      name: "Sales Person",
+      role: "salesperson",
+      manager: head?._id,
+    });
+  }
 
   log("[seed:base] admin + sales head + sales person ready (no sample data).");
 
