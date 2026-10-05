@@ -207,7 +207,7 @@ export default function LeadsBoard() {
   // _v2: anyone with the old "This month" default already cached under the
   // v1 key gets the new default too, instead of being stuck on their old one.
   const [period, setPeriod] = useState(() => localStorage.getItem("rbh_leads_period_v2") || "all");
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(() => Number(searchParams.get("page")) || 1);
   const [formOpen, setFormOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
 
@@ -304,20 +304,23 @@ export default function LeadsBoard() {
   useEffect(() => localStorage.setItem("rbh_leads_view_v2", view), [view]);
   useEffect(() => localStorage.setItem("rbh_leads_period_v2", period), [period]);
 
-  // Keep the URL in step with the active filters — shareable, back-button safe.
-  // Only write when something actually changed, to avoid a setSearchParams loop.
+  // Keep the URL in step with the active filters + current page — shareable,
+  // back-button safe. Page > 1 is written as ?page=N; page 1 is omitted to
+  // keep the URL clean. Only write when something actually changed.
   useEffect(() => {
     const next = {};
     for (const [k, v] of Object.entries(filters)) {
       if (!hasValue(v)) continue;
       next[k] = MULTI_KEYS.includes(k) ? v.join(",") : v;
     }
+    if (page > 1) next.page = String(page);
+    const allKeys = [...searchParams.keys()];
     const same =
-      Object.keys(next).length === [...searchParams.keys()].length &&
+      Object.keys(next).length === allKeys.length &&
       Object.entries(next).every(([k, v]) => searchParams.get(k) === v);
     if (!same) setSearchParams(next, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters]);
+  }, [filters, page]);
 
   const setFilter = (patch) => {
     setPage(1);
