@@ -271,6 +271,17 @@ export default function LeadsBoard() {
     load();
   }, [load]);
 
+  // After data loads, scroll to the lead the user was on before navigating away.
+  useEffect(() => {
+    if (!table.data.length) return;
+    const id = sessionStorage.getItem("rbh_scroll_to_lead");
+    if (!id) return;
+    sessionStorage.removeItem("rbh_scroll_to_lead");
+    setTimeout(() => {
+      document.getElementById(`lead-row-${id}`)?.scrollIntoView({ block: "center", behavior: "smooth" });
+    }, 80);
+  }, [table.data]);
+
   // Refreshed whenever the table itself reloads (filter change, real-time
   // sync, a save) rather than on every filter keystroke separately.
   useEffect(() => {
@@ -896,7 +907,8 @@ export default function LeadsBoard() {
             rows={table.data}
             loading={loading}
             skeletonRows={8}
-            onRowClick={(l) => nav(`/leads/${l._id}`)}
+            rowId={(l) => `lead-row-${l._id}`}
+            onRowClick={(l) => { sessionStorage.setItem("rbh_scroll_to_lead", l._id); nav(`/leads/${l._id}`); }}
             empty={
               hasFilters ? (
                 <EmptyState

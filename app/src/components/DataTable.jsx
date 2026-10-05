@@ -16,6 +16,7 @@ export default function DataTable({
   onRowClick,
   empty,
   skeletonRows = 0,
+  rowId,
 }) {
   if (loading && !skeletonRows) return <Spinner />;
   if (!loading && !rows?.length) return empty || <EmptyState />;
@@ -67,6 +68,7 @@ export default function DataTable({
             : rows.map((row) => (
                 <tr
                   key={row[keyField]}
+                  id={rowId ? rowId(row) : undefined}
                   onClick={onRowClick ? () => onRowClick(row) : undefined}
                   className={`group ${onRowClick ? "cursor-pointer" : ""} transition-colors`}
                 >
