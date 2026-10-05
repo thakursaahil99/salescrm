@@ -76,6 +76,14 @@ export async function buildFiveForThree(salespersonIds, month, year) {
   const ifoBy = Object.fromEntries(ifoRows.map((r) => [`${r._id.sp}:${r._id.w}`, r]));
   const tgtBy = Object.fromEntries(targets.map((t) => [String(t.salesperson), t]));
 
+  // Month total leads per salesperson — used as the "Planned" baseline for the
+  // No of Leads column so the report shows real numbers even without set targets.
+  const monthLeadsByPerson = {};
+  for (const r of leadRows) {
+    const sp = String(r._id.sp);
+    monthLeadsByPerson[sp] = (monthLeadsByPerson[sp] || 0) + r.c;
+  }
+
   // one salesperson's numbers for one week (w = 1..4) or the whole month (w = 0)
   const cell = (spId, w) => {
     const t = tgtBy[String(spId)] || {};
@@ -92,7 +100,7 @@ export async function buildFiveForThree(salespersonIds, month, year) {
     const clients = { pl: stage("course_interested"), act: actClients };
 
     return {
-      leads: { pl: round((t.leadTarget || 0) / div), act: actLeads },
+      leads: { pl: monthLeadsByPerson[String(spId)] || 0, act: actLeads },
       webinar,
       event,
       clients,
