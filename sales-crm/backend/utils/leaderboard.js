@@ -29,9 +29,9 @@ export async function buildLeaderboard(salespersonIds, { from, to } = {}) {
       { $match: { assignedTo: { $in: ids }, ...dateFilter("createdAt") } },
       { $group: { _id: "$assignedTo", c: { $sum: 1 } } },
     ]),
-    Call.aggregate([
-      { $match: { calledBy: { $in: ids }, status: "completed", ...dateFilter("completedAt") } },
-      { $group: { _id: "$calledBy", c: { $sum: 1 } } },
+    Lead.aggregate([
+      { $match: { assignedTo: { $in: ids }, status: { $ne: "new" }, ...dateFilter("createdAt") } },
+      { $group: { _id: "$assignedTo", c: { $sum: 1 } } },
     ]),
     IfoConversion.aggregate([
       { $match: { convertedBy: { $in: ids }, ...dateFilter("conversionDate") } },
@@ -75,7 +75,7 @@ export async function buildLeaderboard(salespersonIds, { from, to } = {}) {
     const id = String(p._id);
     const counts = {
       leadsAdded: leadsBy[id]?.c || 0,
-      callsCompleted: callsBy[id]?.c || 0,
+      callsCompleted: callsBy[id]?.c || 0, // leads moved beyond "new"
       webinarAttendees: webAtt[id] || 0,
       eventAttendees: evtAtt[id] || 0,
       conversions: ifoBy[id]?.c || 0,

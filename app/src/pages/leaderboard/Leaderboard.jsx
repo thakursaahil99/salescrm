@@ -45,7 +45,7 @@ export default function Leaderboard() {
     <div>
       <PageHeader
         title="Leaderboard"
-        subtitle="Weighted activity score: leads ×1, calls ×2, zoom ×3, event ×4, conversion ×25, +₹1k = 1 pt."
+        subtitle="Weighted activity score: leads ×1, leads called ×2, zoom ×3, event ×4, conversion ×25, +₹1k = 1 pt."
       />
 
       <Tabs tabs={PERIODS} active={period} onChange={setPeriod} />
@@ -80,7 +80,7 @@ export default function Leaderboard() {
                     </p>
                     <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-gray-400 mt-0.5">
                       <span>{r.leadsAdded} leads</span>
-                      <span>{r.callsCompleted} calls</span>
+                      <span>{r.callsCompleted} leads called</span>
                       <span>{r.webinarAttendees + r.eventAttendees} attendees</span>
                       <span>{r.conversions} conversions</span>
                       <span>{inrCompact(r.revenue)}</span>
