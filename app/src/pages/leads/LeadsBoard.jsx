@@ -207,6 +207,8 @@ export default function LeadsBoard() {
   // _v2: anyone with the old "This month" default already cached under the
   // v1 key gets the new default too, instead of being stuck on their old one.
   const [period, setPeriod] = useState(() => localStorage.getItem("rbh_leads_period_v2") || "all");
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
   const [page, setPage] = useState(() => Number(searchParams.get("page")) || 1);
   const [formOpen, setFormOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
@@ -243,13 +245,18 @@ export default function LeadsBoard() {
       if (!hasValue(v)) continue;
       p[k] = MULTI_KEYS.includes(k) ? v.join(",") : v;
     }
-    if (!p.from && !p.to && !p.open && !p.followup && period !== "all") {
-      const r = periodRange(period);
-      if (r.from) p.from = r.from;
-      if (r.to) p.to = r.to;
+    if (!p.from && !p.to && !p.open && !p.followup) {
+      if (period === "custom") {
+        if (customFrom) p.from = customFrom;
+        if (customTo) p.to = customTo;
+      } else if (period !== "all") {
+        const r = periodRange(period);
+        if (r.from) p.from = r.from;
+        if (r.to) p.to = r.to;
+      }
     }
     return p;
-  }, [filters, period]);
+  }, [filters, period, customFrom, customTo]);
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
@@ -342,6 +349,9 @@ export default function LeadsBoard() {
   const clearAll = () => {
     setPage(1);
     setFilters(emptyFilters);
+    setPeriod("all");
+    setCustomFrom("");
+    setCustomTo("");
   };
 
   // A bulk import's "Created on" column deliberately backdates leads to their
@@ -825,9 +835,30 @@ export default function LeadsBoard() {
                 value={period}
                 onChange={(k) => {
                   setPeriod(k);
+                  setCustomFrom("");
+                  setCustomTo("");
                   setPage(1);
                 }}
               />
+            )}
+            {!scoped && period === "custom" && (
+              <>
+                <input
+                  type="date"
+                  value={customFrom}
+                  onChange={(e) => { setCustomFrom(e.target.value); setPage(1); }}
+                  className="h-9 rounded-lg border border-gray-300 px-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary xl:w-[150px]"
+                  title="From date"
+                />
+                <input
+                  type="date"
+                  value={customTo}
+                  min={customFrom || undefined}
+                  onChange={(e) => { setCustomTo(e.target.value); setPage(1); }}
+                  className="h-9 rounded-lg border border-gray-300 px-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary xl:w-[150px]"
+                  title="To date"
+                />
+              </>
             )}
             {canPickOwner && (
               <SalespersonPicker

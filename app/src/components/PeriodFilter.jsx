@@ -12,6 +12,7 @@ export const PERIODS = [
   { key: "3m", label: "Last 3 months" },
   { key: "year", label: "This year" },
   { key: "all", label: "All time" },
+  { key: "custom", label: "Custom range…" },
 ];
 
 // → { from, to } as yyyy-mm-dd (or undefined for "all time").
