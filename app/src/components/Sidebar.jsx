@@ -10,7 +10,6 @@ import {
   MdOutlineVideocam,
   MdOutlineEvent,
   MdOutlineMonetizationOn,
-  MdOutlineInsertChartOutlined,
   MdOutlinePhoneForwarded,
   MdOutlineFilterAlt,
   MdOutlinePayments,
@@ -65,7 +64,6 @@ const SECTIONS = [
     accent: { text: "text-violet-500", head: "text-violet-500/80" },
     items: [
       { to: "/reports/calling", label: "Calling Sales Report", icon: MdOutlinePhoneForwarded, roles: MGR },
-      { to: "/report", label: "Sales Report", icon: MdOutlineInsertChartOutlined, roles: MGR },
       { to: "/reports/funnel", label: "Funnel", icon: MdOutlineFilterAlt, roles: MGR },
       { to: "/reports/receivables", label: "Receivables", icon: MdOutlinePayments, roles: MGR },
       { to: "/reports/payment-delays", label: "Payment Delays", icon: MdOutlineRunningWithErrors, roles: MGR },

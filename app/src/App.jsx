@@ -30,7 +30,6 @@ const EventsList = lazy(() => import("./pages/events/EventsList.jsx"));
 const EventDetail = lazy(() => import("./pages/events/EventDetail.jsx"));
 const IfoList = lazy(() => import("./pages/ifo/IfoList.jsx"));
 const TargetsList = lazy(() => import("./pages/targets/TargetsList.jsx"));
-const PerformanceReport = lazy(() => import("./pages/reports/PerformanceReport.jsx"));
 const CallingReport = lazy(() => import("./pages/reports/CallingReport.jsx"));
 const FunnelReport = lazy(() => import("./pages/reports/FunnelReport.jsx"));
 const Receivables = lazy(() => import("./pages/reports/Receivables.jsx"));
@@ -99,7 +98,6 @@ export default function App() {
               <Route path="/targets" element={<TargetsList />} />
               <Route path="/leaderboard" element={<Leaderboard />} />
               <Route path="/reports/calling" element={<CallingReport />} />
-              <Route path="/report" element={<PerformanceReport />} />
               <Route path="/reports/funnel" element={<FunnelReport />} />
               <Route path="/reports/receivables" element={<Receivables />} />
               <Route path="/reports/payment-delays" element={<PaymentDelays />} />
