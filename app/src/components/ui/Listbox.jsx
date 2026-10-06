@@ -32,6 +32,7 @@ export default function Listbox({
   align = "left",
   title,
   label,
+  panelMaxH = "max-h-64",
 }) {
   const [open, setOpen] = useState(false);
   const [activeIdx, setActiveIdx] = useState(-1);
@@ -170,7 +171,7 @@ export default function Listbox({
             data-listbox-panel="true"
             role="listbox"
             style={{ position: "fixed", ...panelPos }}
-            className={`z-50 w-max max-w-xs max-h-64 overflow-auto rounded-xl border border-gray-200 bg-white shadow-modal ring-1 ring-black/5 py-1 animate-fade-in ${panelClassName}`}
+            className={`z-50 w-max max-w-xs ${panelMaxH} overflow-auto rounded-xl border border-gray-200 bg-white shadow-modal ring-1 ring-black/5 py-1 animate-fade-in ${panelClassName}`}
           >
             {options.map((o, i) => (
               <button

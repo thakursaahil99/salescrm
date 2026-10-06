@@ -546,7 +546,14 @@ export default function LeadsBoard() {
       key: "name",
       header: "Lead",
       render: (l) => (
-        <div className="flex items-center gap-3 min-w-[200px]">
+        <div
+          className="flex items-center gap-3 min-w-[200px]"
+          title={
+            l.latestRemark?.text
+              ? `Latest remark (${fromNow(l.latestRemark.at)}):\n${l.latestRemark.text}`
+              : "No remarks yet"
+          }
+        >
           <Avatar name={l.name} />
           <div className="min-w-0">
             <p className="font-semibold text-gray-900 truncate group-hover:text-primary-dark transition-colors">

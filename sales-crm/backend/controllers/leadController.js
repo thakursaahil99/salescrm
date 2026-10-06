@@ -40,6 +40,27 @@ async function attachDealValues(leads) {
   return leads;
 }
 
+// Attach each lead's most recent HUMAN-written remark (the manual notes and the
+// text a salesperson typed while moving a stage) as `latestRemark`, so the
+// leads list can show it on hover without opening the lead. Auto "system" /
+// "payment" lines are skipped — they're not something the salesperson wrote.
+// One aggregation for the whole page; `Remark.lead` is indexed.
+async function attachLatestRemark(leads) {
+  const ids = leads.map((l) => l._id);
+  if (!ids.length) return leads;
+  const rows = await Remark.aggregate([
+    { $match: { lead: { $in: ids }, type: { $in: ["note", "status_change", "call"] } } },
+    { $sort: { createdAt: -1 } },
+    { $group: { _id: "$lead", text: { $first: "$text" }, at: { $first: "$createdAt" } } },
+  ]);
+  const byLead = Object.fromEntries(rows.map((r) => [String(r._id), r]));
+  for (const l of leads) {
+    const r = byLead[String(l._id)];
+    if (r) l.latestRemark = { text: r.text, at: r.at };
+  }
+  return leads;
+}
+
 // Turns ?status/?source/?assignedTo/?q/?from/?to into a Mongo filter. Kept
 // separate from the role scope so the two can be AND-ed — a salesperson
 // passing ?assignedTo=<someoneElse> still can't widen what they see.
@@ -187,6 +208,7 @@ export const listLeads = asyncHandler(async (req, res) => {
     populate: { path: "assignedTo", select: "name" },
   });
   await attachDealValues(result.data);
+  await attachLatestRemark(result.data);
   res.json(result);
 });
 

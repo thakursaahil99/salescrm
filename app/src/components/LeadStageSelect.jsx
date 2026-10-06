@@ -24,6 +24,7 @@ export default function LeadStageSelect({ lead, onPick, disabled = false, classN
       disabled={disabled}
       title="Change stage"
       options={OPTIONS}
+      panelMaxH="max-h-[24rem]"
       onChange={(to) => {
         if (to && to !== lead.status) onPick(lead, to);
       }}
