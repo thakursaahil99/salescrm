@@ -26,6 +26,7 @@ import DataTable from "../../components/DataTable.jsx";
 import MultiSelect from "../../components/ui/MultiSelect.jsx";
 import Pagination from "../../components/ui/Pagination.jsx";
 import EmptyState from "../../components/ui/EmptyState.jsx";
+import Tooltip from "../../components/ui/Tooltip.jsx";
 import KanbanBoard from "../../components/kanban/KanbanBoard.jsx";
 import LeadStageSelect from "../../components/LeadStageSelect.jsx";
 import SalespersonPicker from "../../components/SalespersonPicker.jsx";
@@ -546,12 +547,19 @@ export default function LeadsBoard() {
       key: "name",
       header: "Lead",
       render: (l) => (
-        <div
+        <Tooltip
           className="flex items-center gap-3 min-w-[200px]"
-          title={
-            l.latestRemark?.text
-              ? `Latest remark (${fromNow(l.latestRemark.at)}):\n${l.latestRemark.text}`
-              : "No remarks yet"
+          content={
+            l.latestRemark?.text ? (
+              <>
+                <p className="mb-0.5 font-semibold text-gray-300">
+                  Latest remark · {fromNow(l.latestRemark.at)}
+                </p>
+                <p>{l.latestRemark.text}</p>
+              </>
+            ) : (
+              <span className="text-gray-300">No remarks yet</span>
+            )
           }
         >
           <Avatar name={l.name} />
@@ -563,7 +571,7 @@ export default function LeadsBoard() {
               {l.restaurantName ? `${l.restaurantName} · ${l.phone}` : l.phone}
             </p>
           </div>
-        </div>
+        </Tooltip>
       ),
     },
     {
