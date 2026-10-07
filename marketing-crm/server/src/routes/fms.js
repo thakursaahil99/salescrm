@@ -366,6 +366,18 @@ router.delete(
   })
 );
 
+router.delete(
+  "/:id/entries",
+  requireElevated,
+  asyncHandler(async (req, res) => {
+    const fms = fmsOr404(await Fms.findById(req.params.id));
+    const ids = Array.isArray(req.body.ids) ? req.body.ids : [];
+    if (!ids.length) throw badReq("No entries selected.");
+    const result = await FmsEntry.deleteMany({ _id: { $in: ids }, fmsId: fms._id });
+    res.json({ ok: true, msg: `Deleted ${result.deletedCount} entr${result.deletedCount === 1 ? "y" : "ies"}.` });
+  })
+);
+
 // The steps go in order: a step can be marked done only after the step before it is done, and marking it
 // starts the timer of the next step. EVERY step needs a remark, from admin and sales alike.
 router.post(

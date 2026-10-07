@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Plus, Clock, CalendarDays, Settings, Eye, Pencil, Trash2, LayoutList, PieChart } from "lucide-react";
+import { Plus, Clock, CalendarDays, Settings, Eye, Pencil, Trash2, LayoutList, PieChart, X } from "lucide-react";
 import api from "../../../services/marketingApi.js";
 import { useAuth } from "../../../marketing-lib/useAuth.js";
 import { useToast } from "../../../marketing-lib/useToast.js";
@@ -28,6 +28,7 @@ export default function FmsPage() {
   const [viewEntry, setViewEntry] = useState(null);
   const [timingsOpen, setTimingsOpen] = useState(false);
   const [holidaysOpen, setHolidaysOpen] = useState(false);
+  const [selected, setSelected] = useState(new Set());
 
   // Dashboard drill-down: clicking a chart there jumps here to the FMS's entry list, filtered to
   // just the leads that chart element represents. `pendingViewId` is for the other kind of click —
@@ -75,6 +76,33 @@ export default function FmsPage() {
       refresh();
     } catch (err) {
       push(err.response?.data?.msg || "Failed.", "error");
+    }
+  };
+
+  const toggleSelect = (id) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    setSelected((prev) =>
+      prev.size === filteredEntries.length ? new Set() : new Set(filteredEntries.map((e) => e.id))
+    );
+  };
+
+  const handleBulkDelete = async () => {
+    if (!selected.size) return;
+    if (!confirm(`Delete ${selected.size} selected entr${selected.size === 1 ? "y" : "ies"}? This cannot be undone.`)) return;
+    try {
+      await api.delete(`/fms/${curId}/entries`, { data: { ids: [...selected] } });
+      push(`Deleted ${selected.size} entr${selected.size === 1 ? "y" : "ies"}.`, "success");
+      setSelected(new Set());
+      refresh();
+    } catch (err) {
+      push(err.response?.data?.msg || "Delete failed.", "error");
     }
   };
 
@@ -126,7 +154,7 @@ export default function FmsPage() {
             {visible.map((f) => (
               <button
                 key={f.id}
-                onClick={() => { setCurId(f.id); setDrill(null); }}
+                onClick={() => { setCurId(f.id); setDrill(null); setSelected(new Set()); }}
                 className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-sm font-semibold transition-colors ${f.id === curId ? "bg-brand text-white" : "bg-white border border-gray-200 text-gray-600 hover:border-brand hover:text-brand"}`}
               >
                 {f.name}
@@ -170,10 +198,33 @@ export default function FmsPage() {
                 </div>
               )}
 
+              {isAdmin && selected.size > 0 && (
+                <div className="card p-3 flex items-center justify-between bg-brand-50 border-brand/30">
+                  <span className="text-sm font-semibold text-brand-dark">{selected.size} entr{selected.size === 1 ? "y" : "ies"} selected</span>
+                  <div className="flex items-center gap-2">
+                    <button className="btn-danger" onClick={handleBulkDelete}>
+                      <Trash2 size={16} /> Delete Selected
+                    </button>
+                    <button className="btn-icon" onClick={() => setSelected(new Set())}>
+                      <X size={16} />
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div className="card overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-100 text-left text-xs text-gray-500 uppercase">
+                      {isAdmin && (
+                        <th className="p-3 w-10">
+                          <input
+                            type="checkbox"
+                            checked={filteredEntries.length > 0 && selected.size === filteredEntries.length}
+                            onChange={toggleSelectAll}
+                          />
+                        </th>
+                      )}
                       <th className="p-3 sticky left-0 z-[2] bg-white">{cur.uidLabel}</th>
                       <th className="p-3">{cur.fields[0]?.label}{cur.fields[1] ? ` / ${cur.fields[1].label}` : ""}</th>
                       <th className="p-3 hidden sm:table-cell">{cur.assignedLabel || "Assigned To"}</th>
@@ -184,7 +235,7 @@ export default function FmsPage() {
                   </thead>
                   <tbody>
                     {filteredEntries.length === 0 ? (
-                      <tr><td colSpan={6} className="p-8 text-center text-gray-400">{drill ? "No leads match this filter." : isAdmin ? "No FMS entries yet." : "No leads are assigned to you yet."}</td></tr>
+                      <tr><td colSpan={isAdmin ? 7 : 6} className="p-8 text-center text-gray-400">{drill ? "No leads match this filter." : isAdmin ? "No FMS entries yet." : "No leads are assigned to you yet."}</td></tr>
                     ) : (
                       filteredEntries.map((e) => {
                         const ns = nextStep(e.steps);
@@ -193,6 +244,11 @@ export default function FmsPage() {
                         const anyWaiting = e.steps.some((s) => s.status === "waiting");
                         return (
                           <tr key={e.id} className="group border-b border-gray-50 hover:bg-gray-50 cursor-pointer" onClick={() => setViewEntry(e)}>
+                            {isAdmin && (
+                              <td className="p-3" onClick={(e2) => e2.stopPropagation()}>
+                                <input type="checkbox" checked={selected.has(e.id)} onChange={() => toggleSelect(e.id)} />
+                              </td>
+                            )}
                             <td className="p-3 font-mono text-xs sticky left-0 z-[1] bg-white group-hover:bg-gray-50">{e.uid}</td>
                             <td className="p-3">
                               <p className="font-semibold text-gray-800">{e.title}</p>
